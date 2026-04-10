@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>erwins enkel — PSA Email Vorlagen Generator</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Mobile Warning -->
+  <div class="mobile-warning" id="mobile-warning">
+    <div class="mobile-warning-content">
+      <span class="mobile-warning-icon">🖥️</span>
+      <h2>Desktop empfohlen</h2>
+      <p>Der Template Generator ist für die Nutzung am Desktop optimiert. Auf mobilen Geräten ist die Bearbeitung und der Code-Export eingeschränkt.</p>
+      <button class="btn btn-primary" id="mobile-warning-dismiss">Trotzdem fortfahren</button>
+    </div>
+  </div>
+
+  <!-- Top Bar -->
+  <header class="top-bar">
+    <h1><span class="brand-prefix">erwins enkel</span> — PSA Email Vorlagen Generator</h1>
+    <div class="top-bar-actions">
+      <button class="btn" id="btn-export" title="Konfiguration als JSON exportieren">Export JSON</button>
+      <button class="btn" id="btn-import" title="Konfiguration aus JSON importieren">Import JSON</button>
+      <input type="file" id="import-file" accept=".json">
+      <div class="sponsor-dropdown">
+        <button class="btn btn-sponsor" id="btn-sponsor" title="Support this project">☕ Support</button>
+        <div class="sponsor-dropdown-menu" id="sponsor-dropdown-menu">
+          <a href="#" class="sponsor-option" id="sponsor-coffee" target="_blank" rel="noopener noreferrer">☕ Buy me a Coffee</a>
+          <a href="#" class="sponsor-option" id="sponsor-github" target="_blank" rel="noopener noreferrer">❤️ GitHub Sponsors</a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Layout -->
+  <div class="app-layout">
+
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+
+      <!-- Style Selection -->
+      <div class="sidebar-section">
+        <h3 class="sidebar-section-header"><span>Style</span><span class="chevron">▶</span></h3>
+        <div class="sidebar-section-content">
+          <div class="template-tabs" id="style-tabs"></div>
+        </div>
+      </div>
+
+      <!-- Template Selection -->
+      <div class="sidebar-section">
+        <h3 class="sidebar-section-header"><span>Template</span><span class="chevron">▶</span></h3>
+        <div class="sidebar-section-content">
+          <div class="template-tabs" id="template-tabs"></div>
+        </div>
+      </div>
+
+      <!-- Design System -->
+      <div class="sidebar-section collapsed">
+        <h3 class="sidebar-section-header"><span>Design System</span><span class="chevron">▶</span></h3>
+        <div class="sidebar-section-content">
+
+          <div class="form-group">
+            <label>Primärfarbe</label>
+            <div class="color-input-row">
+              <input type="color" id="ds-primary-color" value="#2c3e50">
+              <input type="text" id="ds-primary-color-text" value="#2c3e50" maxlength="7">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Textfarbe</label>
+            <div class="color-input-row">
+              <input type="color" id="ds-text-color" value="#333333">
+              <input type="text" id="ds-text-color-text" value="#333333" maxlength="7">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Akzentfarbe (dezent)</label>
+            <div class="color-input-row">
+              <input type="color" id="ds-accent-color" value="#888888">
+              <input type="text" id="ds-accent-color-text" value="#888888" maxlength="7">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Logo-URL</label>
+            <input type="url" id="ds-logo" value="" placeholder="https://example.com/logo.png">
+          </div>
+
+          <div class="form-group">
+            <label>Firmenname</label>
+            <input type="text" id="ds-company" value="Muster GmbH">
+          </div>
+
+          <div class="form-group">
+            <label>Claim / Slogan</label>
+            <input type="text" id="ds-claim" value="Ihr IT-Dienstleister">
+          </div>
+
+          <div class="form-group">
+            <label>Adresse</label>
+            <input type="text" id="ds-address" value="Musterstraße 1, 10115 Berlin">
+          </div>
+
+          <div class="form-group">
+            <label>Telefon</label>
+            <input type="tel" id="ds-phone" value="+49 30 123 456 789">
+          </div>
+
+          <div class="form-group">
+            <label>Web-URL</label>
+            <input type="url" id="ds-web" value="https://www.example.com">
+          </div>
+
+          <div class="form-group">
+            <label>Zertifizierungen / Footer-Info</label>
+            <input type="text" id="ds-certs" value="" placeholder="z.B. ISO 9001 zertifiziert">
+          </div>
+
+          <div class="form-group">
+            <label>Font-Familie</label>
+            <select id="ds-font">
+              <option value="Arial,Helvetica,sans-serif" selected>Arial</option>
+              <option value="Verdana,Geneva,sans-serif">Verdana</option>
+              <option value="Georgia,serif">Georgia</option>
+              <option value="Tahoma,Geneva,sans-serif">Tahoma</option>
+              <option value="'Times New Roman',Times,serif">Times New Roman</option>
+              <option value="'Trebuchet MS',Helvetica,sans-serif">Trebuchet MS</option>
+            </select>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Legal / Rechtliche Angaben -->
+      <div class="sidebar-section collapsed">
+        <h3 class="sidebar-section-header"><span>Rechtliche Angaben</span><span class="chevron">▶</span></h3>
+        <div class="sidebar-section-content">
+
+          <div class="form-group">
+            <label>Geschäftsführer</label>
+            <input type="text" id="ds-legal-ceo" value="Max Mustermann">
+          </div>
+
+          <div class="form-group">
+            <label>Registergericht</label>
+            <input type="text" id="ds-legal-court" value="AG Berlin-Charlottenburg">
+          </div>
+
+          <div class="form-group">
+            <label>Handelsregister-Nr</label>
+            <input type="text" id="ds-legal-regnr" value="HRB 12345 B">
+          </div>
+
+          <div class="form-group">
+            <label>USt-IdNr</label>
+            <input type="text" id="ds-legal-vatid" value="DE123456789">
+          </div>
+
+          <div class="form-group">
+            <label>Impressum-URL</label>
+            <input type="url" id="ds-legal-imprint" value="https://www.example.com/impressum/">
+          </div>
+
+          <div class="form-group">
+            <label>Datenschutz-URL</label>
+            <input type="url" id="ds-legal-privacy" value="https://www.example.com/datenschutz/">
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Terminbuchung -->
+      <div class="sidebar-section collapsed">
+        <h3 class="sidebar-section-header"><span>Terminbuchung</span><span class="chevron">▶</span></h3>
+        <div class="sidebar-section-content">
+
+          <div class="form-group">
+            <label>Buchungslink aktiv</label>
+            <label class="toggle" style="float:right;">
+              <input type="checkbox" id="ds-booking-active">
+              <span class="toggle-slider"></span>
+            </label>
+            <div style="clear:both;"></div>
+          </div>
+
+          <div class="form-group">
+            <label>Buchungslink-URL</label>
+            <input type="url" id="ds-booking-url" placeholder="https://cal.com/ihr-unternehmen/termin">
+          </div>
+
+          <div class="form-group">
+            <label>Buchungslink-Text</label>
+            <input type="text" id="ds-booking-text" value="Jetzt Termin buchen">
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Subject -->
+      <div class="sidebar-section">
+        <h3 class="sidebar-section-header"><span>Betreff</span><span class="chevron">▶</span></h3>
+        <div class="sidebar-section-content">
+          <div class="subject-row">
+            <input type="text" id="template-subject" placeholder="Betreff mit [Variablen]...">
+            <button class="btn btn-sm btn-insert-var" data-target="template-subject" title="Variable einfügen">+Var</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section Toggles -->
+      <div class="sidebar-section" id="section-toggles">
+        <h3 class="sidebar-section-header"><span>Sections</span><span class="chevron">▶</span></h3>
+        <div class="sidebar-section-content" id="section-toggles-content"></div>
+      </div>
+
+      <!-- Template-specific Config -->
+      <div class="sidebar-section" id="template-config">
+        <h3 class="sidebar-section-header"><span>Template-Texte</span><span class="chevron">▶</span></h3>
+        <div class="sidebar-section-content" id="template-config-content"></div>
+      </div>
+
+    </aside>
+
+    <!-- Preview Panel -->
+    <main class="preview-panel" id="preview-panel">
+      <div class="preview-toolbar">
+        <div class="preview-toolbar-left">
+          <div class="device-toggle">
+            <button class="active" data-device="desktop">Desktop</button>
+            <button data-device="mobile">Mobile</button>
+          </div>
+        </div>
+        <div class="preview-toolbar-right">
+          <button class="btn btn-sm" id="btn-vars" title="Variablen-Picker öffnen">Variablen</button>
+          <button class="btn btn-sm" id="btn-show-code">Code anzeigen</button>
+          <button class="btn btn-sm btn-primary" id="btn-copy-code">Code kopieren</button>
+          <button class="btn btn-sm" id="btn-copy-subject">Betreff kopieren</button>
+        </div>
+      </div>
+      <div class="preview-container">
+        <div class="preview-frame" id="preview-frame"></div>
+      </div>
+    </main>
+
+    <!-- Code Panel (hidden by default) -->
+    <div class="code-panel" id="code-panel">
+      <div class="preview-toolbar">
+        <div class="preview-toolbar-left">
+          <strong style="font-size:13px;">HTML-Code (mit PSA-Variablen)</strong>
+        </div>
+        <div class="preview-toolbar-right">
+          <button class="btn btn-sm btn-primary" id="btn-copy-code-2">Code kopieren</button>
+          <button class="btn btn-sm" id="btn-show-preview">Preview anzeigen</button>
+        </div>
+      </div>
+      <div class="code-output">
+        <pre id="code-output-pre"></pre>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Variable Picker Overlay -->
+  <div class="var-picker-overlay" id="var-picker-overlay">
+    <div class="var-picker">
+      <div class="var-picker-header">
+        <h3>Variable einfügen</h3>
+        <button class="var-picker-close" id="var-picker-close">&times;</button>
+      </div>
+      <div class="var-picker-search">
+        <input type="text" id="var-search" placeholder="Suchen...">
+      </div>
+      <div class="var-picker-body" id="var-picker-body"></div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <!-- App Footer -->
+  <footer class="app-footer">
+    Made with ☕ by <a href="#" id="footer-brand-link" target="_blank" rel="noopener noreferrer">erwins enkel</a>
+    ·
+    <a href="#" id="footer-repo-link" target="_blank" rel="noopener noreferrer">GitHub</a>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

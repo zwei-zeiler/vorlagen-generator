@@ -1,0 +1,108 @@
+{
+  "categories": [
+    {
+      "name": "Ticket",
+      "variables": [
+        { "variable": "[Ticket: Ticket Number]", "example": "T20250401.0042", "description": "Ticket-Nummer" },
+        { "variable": "[Ticket: Title]", "example": "Drucker im 2. OG druckt nicht", "description": "Ticket-Titel" },
+        { "variable": "[Ticket: Description]", "example": "Der Drucker HP LaserJet im 2. OG reagiert nicht mehr auf Druckaufträge. Neustart wurde bereits versucht.", "description": "Ticket-Beschreibung" },
+        { "variable": "[Ticket: Status]", "example": "In Bearbeitung", "description": "Aktueller Status" },
+        { "variable": "[Ticket: Priority]", "example": "Hoch", "description": "Priorität" },
+        { "variable": "[Ticket: Queue]", "example": "1st Level Support", "description": "Queue/Warteschlange" },
+        { "variable": "[Ticket: Due Date]", "example": "03.04.2025", "description": "Fälligkeitsdatum" },
+        { "variable": "[Ticket: Create Date]", "example": "01.04.2025", "description": "Erstelldatum" },
+        { "variable": "[Ticket: Ticket Number (with link)]", "example": "<a href='#'>T20250401.0042</a>", "description": "Ticket-Nummer als Link" }
+      ]
+    },
+    {
+      "name": "Ticket Note",
+      "variables": [
+        { "variable": "[Ticket: Note Title]", "example": "Zwischenstand Druckerproblem", "description": "Titel der Notiz" },
+        { "variable": "[Ticket: Note Description]", "example": "Wir haben den Drucker-Treiber neu installiert und einen Testdruck durchgeführt. Das Problem scheint am Netzwerkkabel zu liegen, welches wir morgen austauschen werden.", "description": "Inhalt der Notiz" }
+      ]
+    },
+    {
+      "name": "Ticket Time Entry",
+      "variables": [
+        { "variable": "[Ticket Time Entry: Summary Notes]", "example": "Drucker-Treiber aktualisiert und Netzwerkverbindung geprüft.", "description": "Zusammenfassung des Zeiteintrags" },
+        { "variable": "[Ticket Time Entry: Hours Worked]", "example": "1.5", "description": "Geleistete Stunden" },
+        { "variable": "[Ticket Time Entry: Start Date/Time]", "example": "01.04.2025 09:30", "description": "Startzeit" }
+      ]
+    },
+    {
+      "name": "Miscellaneous",
+      "variables": [
+        { "variable": "[Miscellaneous: Initiating Resource Name]", "example": "Max Mustermann", "description": "Name des Absenders/Auslösers" },
+        { "variable": "[Miscellaneous: Initiating Resource Title]", "example": "Senior IT-Consultant", "description": "Position des Absenders" },
+        { "variable": "[Miscellaneous: Initiating Resource Email]", "example": "m.mustermann@example.com", "description": "E-Mail des Absenders" },
+        { "variable": "[Miscellaneous: Initiating Resource Phone]", "example": "+49 30 123 456 001", "description": "Telefon des Absenders" },
+        { "variable": "[Miscellaneous: Your Company Name]", "example": "Muster GmbH", "description": "Eigener Firmenname" },
+        { "variable": "[Miscellaneous: Current Date]", "example": "01.04.2025", "description": "Aktuelles Datum" },
+        { "variable": "[Miscellaneous: Primary Logo]", "example": "https://example.com/logo.png", "description": "Primäres Logo" }
+      ]
+    },
+    {
+      "name": "Resource",
+      "variables": [
+        { "variable": "[Resource: First Name]", "example": "Thomas", "description": "Vorname des zugewiesenen Technikers" },
+        { "variable": "[Resource: Last Name]", "example": "Schmidt", "description": "Nachname des zugewiesenen Technikers" },
+        { "variable": "[Resource: Title]", "example": "IT-Systemadministrator", "description": "Position des Technikers" },
+        { "variable": "[Resource: Email]", "example": "t.schmidt@example.com", "description": "E-Mail des Technikers" },
+        { "variable": "[Resource: Phone]", "example": "+49 30 123 456 002", "description": "Telefon des Technikers" }
+      ]
+    },
+    {
+      "name": "Contact",
+      "variables": [
+        { "variable": "[Contact: First Name]", "example": "Anna", "description": "Vorname des Kunden-Ansprechpartners" },
+        { "variable": "[Contact: Last Name]", "example": "Müller", "description": "Nachname des Kunden-Ansprechpartners" },
+        { "variable": "[Contact: Email Address]", "example": "a.mueller@kunde.de", "description": "E-Mail des Ansprechpartners" },
+        { "variable": "[Contact: Phone]", "example": "+49 30 555 1234", "description": "Telefon des Ansprechpartners" }
+      ]
+    },
+    {
+      "name": "Organization",
+      "variables": [
+        { "variable": "[Organization: Organization Name]", "example": "Muster GmbH", "description": "Firmenname des Kunden" },
+        { "variable": "[Organization: Phone]", "example": "+49 30 555 0000", "description": "Telefon des Kunden" },
+        { "variable": "[Organization: Web]", "example": "www.muster-gmbh.de", "description": "Webseite des Kunden" },
+        { "variable": "[Organization: Address 1]", "example": "Berliner Str. 42", "description": "Adresse Zeile 1" },
+        { "variable": "[Organization: City]", "example": "Berlin", "description": "Stadt" },
+        { "variable": "[Organization: Postal Code]", "example": "10115", "description": "PLZ" }
+      ]
+    },
+    {
+      "name": "Your Local Organization",
+      "variables": [
+        { "variable": "[Your Local Organization: Organization Name]", "example": "Muster GmbH", "description": "Eigene Firma" },
+        { "variable": "[Your Local Organization: Address]", "example": "Musterstraße 1, 10115 Berlin", "description": "Eigene Adresse" },
+        { "variable": "[Your Local Organization: Phone]", "example": "+49 30 123 456 789", "description": "Eigenes Telefon" }
+      ]
+    },
+    {
+      "name": "Attachment",
+      "variables": [
+        { "variable": "[Attachment: Attachment Name (with link)]", "example": "<a href='#'>screenshot.png</a>", "description": "Anhangsname als Link" },
+        { "variable": "[Attachment: Attachment File/Folder/URL (with link)]", "example": "<a href='#'>Datei öffnen</a>", "description": "Anhang-Pfad als Link" }
+      ]
+    },
+    {
+      "name": "Contract",
+      "variables": [
+        { "variable": "[Contract: Contract Name]", "example": "Managed Services Vertrag", "description": "Vertragsname" },
+        { "variable": "[Contract: Contract Number]", "example": "MSP-2025-001", "description": "Vertragsnummer" },
+        { "variable": "[Contract: Start Date]", "example": "01.01.2025", "description": "Vertragsbeginn" },
+        { "variable": "[Contract: End Date]", "example": "31.12.2025", "description": "Vertragsende" }
+      ]
+    },
+    {
+      "name": "Device",
+      "variables": [
+        { "variable": "[Device: Device Name]", "example": "PC-MUSTER-001", "description": "Gerätename" },
+        { "variable": "[Device: Serial Number]", "example": "SN-ABC123456", "description": "Seriennummer" },
+        { "variable": "[Device: Product Name]", "example": "HP LaserJet Pro M404dn", "description": "Produktname" },
+        { "variable": "[Device: Device Type]", "example": "Drucker", "description": "Gerätetyp" }
+      ]
+    }
+  ]
+}

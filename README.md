@@ -1,5 +1,7 @@
 # erwins enkel — PSA Email Vorlagen Generator
 
+> 🌐 **Live:** https://vorlagen-generator.vercel.app
+
 Browser-basierter Template-Generator fuer professionelle E-Mail-Vorlagen in PSA-Systemen (Autotask, HaloPSA u.a.).
 
 ## Starten
@@ -30,3 +32,7 @@ Weitere PSA-Systeme (HaloPSA etc.) koennen als eigene JSON-Datei hinzugefuegt we
 ## Lizenz
 
 MIT
+
+---
+
+Ein Projekt der **Zweizeiler UG**.

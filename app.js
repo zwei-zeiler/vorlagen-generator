@@ -342,7 +342,7 @@
 
   // ── Section Definitions ──
   const SECTIONS = [
-    { key: 'previewText', label: 'Preview Text' },
+    { key: 'previewText', label: 'Preview Text', tooltip: 'Der Vorschautext wird in E-Mail-Clients (Outlook, Gmail, Apple Mail) in der Inbox neben dem Betreff angezeigt, bevor die E-Mail geöffnet wird. Er ist im geöffneten Mail unsichtbar.' },
     { key: 'header', label: 'Header Bar' },
     { key: 'ticketInfo', label: 'Ticket Info Bar' },
     { key: 'messageBody', label: 'Message Body' },
@@ -954,6 +954,13 @@
 
       const span = document.createElement('span');
       span.textContent = sec.label;
+      if (sec.tooltip) {
+        const info = document.createElement('span');
+        info.className = 'info-tooltip';
+        info.textContent = 'i';
+        info.title = sec.tooltip;
+        span.appendChild(info);
+      }
 
       const toggle = document.createElement('label');
       toggle.className = 'toggle';

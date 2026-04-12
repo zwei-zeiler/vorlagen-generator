@@ -3,6 +3,10 @@ import crypto from 'crypto';
 
 const redis = Redis.fromEnv();
 
+export const config = {
+  api: { bodyParser: { sizeLimit: '50kb' } },
+};
+
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
 
@@ -19,11 +23,9 @@ export default async function handler(req, res) {
       req.socket?.remoteAddress ||
       'unknown';
 
-    const rateLimitKey = `ratelimit:share:${ip}`;
-    const count = await redis.incr(rateLimitKey);
-    if (count === 1) {
-      await redis.expire(rateLimitKey, 60);
-    }
+    const key = `ratelimit:share:${ip}`;
+    await redis.set(key, 0, { nx: true, ex: 60 });
+    const count = await redis.incr(key);
     if (count > 10) {
       return res.status(429).json({ error: 'Rate limit exceeded. Try again in a minute.' });
     }
@@ -32,10 +34,6 @@ export default async function handler(req, res) {
     const body = req.body;
     if (!body || typeof body !== 'object') {
       return res.status(400).json({ error: 'Request body must be a JSON object.' });
-    }
-
-    if (JSON.stringify(body).length > 50000) {
-      return res.status(413).json({ error: 'Payload too large. Maximum size is 50 KB.' });
     }
 
     if (!body.version || !body.design) {

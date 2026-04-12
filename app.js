@@ -22,6 +22,9 @@
   // ── PSA Variables (loaded from psa/<provider>.json) ──
   let psaVars = null;
 
+  // ── Confirm Modal cancel hook ──
+  let _cancelModal = function () {};
+
   // ── Default Design System ──
   const DEFAULT_DESIGN = {
     primaryColor: '#2c3e50',
@@ -1242,7 +1245,7 @@
       const dd = String(exp.getDate()).padStart(2, '0');
       const mm = String(exp.getMonth() + 1).padStart(2, '0');
       const yyyy = exp.getFullYear();
-      $('#share-expiry').textContent = 'Gueltig bis ' + dd + '.' + mm + '.' + yyyy;
+      $('#share-expiry').textContent = 'Gültig bis ' + dd + '.' + mm + '.' + yyyy;
 
     } catch (err) {
       stateLoading.style.display = 'none';
@@ -1294,10 +1297,13 @@
         overlay.classList.remove('active');
         $('#confirm-modal-accept').removeEventListener('click', onAccept);
         $('#confirm-modal-cancel').removeEventListener('click', onCancel);
+        _cancelModal = function () {};
       }
 
       function onAccept() { cleanup(); resolve(true); }
       function onCancel() { cleanup(); resolve(false); }
+
+      _cancelModal = () => { cleanup(); resolve(false); };
 
       $('#confirm-modal-accept').addEventListener('click', onAccept);
       $('#confirm-modal-cancel').addEventListener('click', onCancel);
@@ -1520,7 +1526,7 @@
     document.addEventListener('click', (e) => {
       const popover = $('#share-popover');
       const wrapper = $('#share-popover-wrapper');
-      if (popover.classList.contains('open') && !wrapper.contains(e.target) && e.target.id !== 'btn-share') {
+      if (popover.classList.contains('open') && !wrapper.contains(e.target)) {
         popover.classList.remove('open');
       }
     });
@@ -1553,10 +1559,7 @@
       if (e.key === 'Escape') {
         closeVarPicker();
         $('#share-popover').classList.remove('open');
-        const confirmOverlay = $('#confirm-modal-overlay');
-        if (confirmOverlay.classList.contains('active')) {
-          confirmOverlay.classList.remove('active');
-        }
+        _cancelModal();
       }
     });
   }

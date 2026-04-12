@@ -1169,23 +1169,28 @@
     showToast('Konfiguration exportiert');
   }
 
+  // ── Apply Config (shared by import and share link loading) ──
+  function applyConfig(data) {
+    if (data.design) state.design = { ...DEFAULT_DESIGN, ...data.design };
+    if (data.templates) state.templates = data.templates;
+    state.activeTemplateId = state.templates[0]?.id || 'ticket-note';
+    state.activeStyle = data.activeStyle || 'modern-card';
+    writeDesignToUI();
+    renderStyleTabs();
+    renderTemplateTabs();
+    renderSectionToggles();
+    renderTemplateConfig();
+    renderSubjectField();
+    onStateChange();
+  }
+
   // ── JSON Import ──
   function importConfig(file) {
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
         const data = JSON.parse(e.target.result);
-        if (data.design) state.design = { ...DEFAULT_DESIGN, ...data.design };
-        if (data.templates) state.templates = data.templates;
-        state.activeTemplateId = state.templates[0]?.id || 'ticket-note';
-        state.activeStyle = data.activeStyle || 'modern-card';
-        writeDesignToUI();
-        renderStyleTabs();
-        renderTemplateTabs();
-        renderSectionToggles();
-        renderTemplateConfig();
-        renderSubjectField();
-        onStateChange();
+        applyConfig(data);
         showToast('Konfiguration importiert');
       } catch (err) {
         showToast('Fehler beim Import: ungültige JSON-Datei');
@@ -1193,6 +1198,118 @@
       }
     };
     reader.readAsText(file);
+  }
+
+  // ── Create Share Link ──
+  async function createShareLink() {
+    const popover = $('#share-popover');
+    const stateLoading = $('#share-state-loading');
+    const stateSuccess = $('#share-state-success');
+    const stateError = $('#share-state-error');
+
+    popover.classList.add('open');
+    stateLoading.style.display = '';
+    stateSuccess.style.display = 'none';
+    stateError.style.display = 'none';
+
+    readDesignFromUI();
+    const payload = {
+      version: 1,
+      exportDate: new Date().toISOString(),
+      design: state.design,
+      templates: state.templates,
+      activeStyle: state.activeStyle
+    };
+
+    try {
+      const resp = await fetch('/api/share', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}));
+        throw new Error(err.error || 'HTTP ' + resp.status);
+      }
+
+      const result = await resp.json();
+      stateLoading.style.display = 'none';
+      stateSuccess.style.display = '';
+      $('#share-url-input').value = result.url;
+
+      const exp = new Date(result.expiresAt);
+      const dd = String(exp.getDate()).padStart(2, '0');
+      const mm = String(exp.getMonth() + 1).padStart(2, '0');
+      const yyyy = exp.getFullYear();
+      $('#share-expiry').textContent = 'Gueltig bis ' + dd + '.' + mm + '.' + yyyy;
+
+    } catch (err) {
+      stateLoading.style.display = 'none';
+      stateError.style.display = '';
+      const msg = err.message.includes('Rate limit')
+        ? 'Zu viele Anfragen. Bitte kurz warten.'
+        : 'Link konnte nicht erstellt werden. Bitte erneut versuchen.';
+      $('#share-error-msg').textContent = msg;
+      console.error('Share link error:', err);
+    }
+  }
+
+  // ── Load From Share Link ──
+  async function loadFromShareLink(shareId) {
+    try {
+      const resp = await fetch('/api/share/' + encodeURIComponent(shareId));
+
+      if (resp.status === 404) {
+        showToast('Dieser Share-Link ist abgelaufen oder ungueltig.');
+        window.history.replaceState({}, '', '/');
+        return;
+      }
+
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+
+      const data = await resp.json();
+      const accepted = await showConfirmModal();
+
+      if (accepted) {
+        applyConfig(data);
+        showToast('Konfiguration aus Share-Link geladen');
+      }
+      window.history.replaceState({}, '', '/');
+
+    } catch (err) {
+      showToast('Fehler beim Laden des Share-Links.');
+      window.history.replaceState({}, '', '/');
+      console.error('Share link load error:', err);
+    }
+  }
+
+  // ── Show Confirm Modal ──
+  function showConfirmModal() {
+    return new Promise((resolve) => {
+      const overlay = $('#confirm-modal-overlay');
+      overlay.classList.add('active');
+
+      function cleanup() {
+        overlay.classList.remove('active');
+        $('#confirm-modal-accept').removeEventListener('click', onAccept);
+        $('#confirm-modal-cancel').removeEventListener('click', onCancel);
+      }
+
+      function onAccept() { cleanup(); resolve(true); }
+      function onCancel() { cleanup(); resolve(false); }
+
+      $('#confirm-modal-accept').addEventListener('click', onAccept);
+      $('#confirm-modal-cancel').addEventListener('click', onCancel);
+
+      overlay.addEventListener('click', function handler(e) {
+        if (e.target === overlay) {
+          overlay.removeEventListener('click', handler);
+          cleanup();
+          resolve(false);
+        }
+      });
+    });
   }
 
   // ── Copy to Clipboard ──
@@ -1385,6 +1502,29 @@
       }
     });
 
+    // ── Share ──
+    $('#btn-share').addEventListener('click', (e) => {
+      e.stopPropagation();
+      createShareLink();
+    });
+    $('#share-popover-close').addEventListener('click', () => {
+      $('#share-popover').classList.remove('open');
+    });
+    $('#btn-copy-share-url').addEventListener('click', () => {
+      const url = $('#share-url-input').value;
+      copyToClipboard(url, 'Link');
+    });
+    $('#btn-share-retry').addEventListener('click', () => {
+      createShareLink();
+    });
+    document.addEventListener('click', (e) => {
+      const popover = $('#share-popover');
+      const wrapper = $('#share-popover-wrapper');
+      if (popover.classList.contains('open') && !wrapper.contains(e.target) && e.target.id !== 'btn-share') {
+        popover.classList.remove('open');
+      }
+    });
+
     // ── Sponsor dropdown ──
     const sponsorBtn = $('#btn-sponsor');
     const sponsorMenu = $('#sponsor-dropdown-menu');
@@ -1402,10 +1542,21 @@
     $('#footer-brand-link').href = SPONSOR_COFFEE_URL;
     $('#footer-repo-link').href = GITHUB_REPO_URL;
 
+    // ── Share link detection ──
+    const shareParam = new URLSearchParams(window.location.search).get('share');
+    if (shareParam) {
+      loadFromShareLink(shareParam);
+    }
+
     // ── Keyboard shortcuts ──
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
         closeVarPicker();
+        $('#share-popover').classList.remove('open');
+        const confirmOverlay = $('#confirm-modal-overlay');
+        if (confirmOverlay.classList.contains('active')) {
+          confirmOverlay.classList.remove('active');
+        }
       }
     });
   }

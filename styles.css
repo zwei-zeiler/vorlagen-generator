@@ -197,6 +197,23 @@ body {
 .sidebar-section:not(.collapsed) .chevron {
   transform: rotate(90deg);
 }
+.sidebar-section-header .badge-warn {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ui-accent);
+  margin-left: 6px;
+  flex-shrink: 0;
+}
+.btn-reset {
+  color: var(--ui-text-secondary);
+  border-color: var(--ui-border);
+}
+.btn-reset:hover {
+  color: var(--ui-accent);
+  border-color: var(--ui-accent);
+}
 .sidebar-section-content {
   overflow: hidden;
   max-height: 2000px;

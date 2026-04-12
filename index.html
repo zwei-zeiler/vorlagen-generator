@@ -42,6 +42,7 @@
       <button class="btn" id="btn-export" title="Konfiguration als JSON exportieren">Export JSON</button>
       <button class="btn" id="btn-import" title="Konfiguration aus JSON importieren">Import JSON</button>
       <input type="file" id="import-file" accept=".json">
+      <button class="btn btn-reset" id="btn-reset" title="Alle Einstellungen zurücksetzen">Zurücksetzen</button>
       <div class="share-popover-wrapper" id="share-popover-wrapper">
         <button class="btn" id="btn-share" title="Konfiguration als Link teilen">Link teilen</button>
         <div class="share-popover" id="share-popover">
@@ -83,7 +84,7 @@
     <aside class="sidebar" id="sidebar">
 
       <!-- 1. Style Selection -->
-      <div class="sidebar-section">
+      <div class="sidebar-section collapsed">
         <h3 class="sidebar-section-header"><span>Style</span><span class="chevron">▶</span></h3>
         <div class="sidebar-section-content">
           <div class="template-tabs" id="style-tabs"></div>
@@ -91,7 +92,7 @@
       </div>
 
       <!-- 2. Template Selection -->
-      <div class="sidebar-section">
+      <div class="sidebar-section collapsed">
         <h3 class="sidebar-section-header"><span>Template</span><span class="chevron">▶</span></h3>
         <div class="sidebar-section-content">
           <div class="template-tabs" id="template-tabs"></div>
@@ -99,7 +100,7 @@
       </div>
 
       <!-- 3. Subject -->
-      <div class="sidebar-section">
+      <div class="sidebar-section collapsed">
         <h3 class="sidebar-section-header"><span>Betreff</span><span class="chevron">▶</span></h3>
         <div class="sidebar-section-content">
           <div class="subject-row">
@@ -110,13 +111,13 @@
       </div>
 
       <!-- 4. Section Toggles -->
-      <div class="sidebar-section" id="section-toggles">
+      <div class="sidebar-section collapsed" id="section-toggles">
         <h3 class="sidebar-section-header"><span>Sections</span><span class="chevron">▶</span></h3>
         <div class="sidebar-section-content" id="section-toggles-content"></div>
       </div>
 
       <!-- 5. Template-specific Config -->
-      <div class="sidebar-section" id="template-config">
+      <div class="sidebar-section collapsed" id="template-config">
         <h3 class="sidebar-section-header"><span>Template-Texte</span><span class="chevron">▶</span></h3>
         <div class="sidebar-section-content" id="template-config-content"></div>
       </div>

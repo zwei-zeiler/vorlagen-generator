@@ -1117,11 +1117,36 @@
     }
   }
 
+  // ── Sidebar Warning Badges ──
+  function updateSidebarBadges() {
+    const d = state.design;
+    const checks = {
+      'Design System': !d.logoUrl || d.company === 'Muster GmbH' || d.web === 'https://www.example.com',
+      'Rechtliche Angaben': d.legalCeo === 'Max Mustermann' || d.legalRegNr === 'HRB 12345 B' || d.legalImprintUrl === 'https://www.example.com/impressum/',
+      'Terminbuchung': false,
+      'Kundenportal': false
+    };
+    $$('.sidebar-section-header').forEach(header => {
+      const label = header.querySelector('span:first-child');
+      if (!label) return;
+      const name = label.textContent.trim();
+      const existing = header.querySelector('.badge-warn');
+      if (existing) existing.remove();
+      if (checks[name]) {
+        const badge = document.createElement('span');
+        badge.className = 'badge-warn';
+        badge.title = 'Bitte anpassen';
+        label.appendChild(badge);
+      }
+    });
+  }
+
   // ── State Change Handler ──
   function onStateChange() {
     renderPreview();
     renderCodeOutput();
     saveToLocalStorage();
+    updateSidebarBadges();
   }
 
   // ── LocalStorage ──
@@ -1288,9 +1313,11 @@
   }
 
   // ── Show Confirm Modal ──
-  function showConfirmModal() {
+  function showConfirmModal(title, message) {
     return new Promise((resolve) => {
       const overlay = $('#confirm-modal-overlay');
+      if (title) overlay.querySelector('h3').textContent = title;
+      if (message) overlay.querySelector('p').textContent = message;
       overlay.classList.add('active');
 
       function cleanup() {
@@ -1390,8 +1417,9 @@
     renderPreview();
     renderCodeOutput();
 
-    // Initialize accordions
+    // Initialize accordions and badges
     initAccordions();
+    updateSidebarBadges();
 
     // ── Design System Event Listeners ──
     syncColorInputs('#ds-primary-color', '#ds-primary-color-text');
@@ -1505,6 +1533,29 @@
       if (e.target.files[0]) {
         importConfig(e.target.files[0]);
         e.target.value = '';
+      }
+    });
+
+    // ── Reset ──
+    $('#btn-reset').addEventListener('click', async () => {
+      const accepted = await showConfirmModal(
+        'Zurücksetzen?',
+        'Alle Einstellungen werden auf die Standardwerte zurückgesetzt. Ihre aktuelle Konfiguration geht dabei verloren.'
+      );
+      if (accepted) {
+        localStorage.removeItem(STORAGE_KEY);
+        state.design = { ...DEFAULT_DESIGN };
+        state.templates = JSON.parse(JSON.stringify(DEFAULT_TEMPLATES));
+        state.activeTemplateId = 'ticket-note';
+        state.activeStyle = 'modern-card';
+        writeDesignToUI();
+        renderStyleTabs();
+        renderTemplateTabs();
+        renderSectionToggles();
+        renderTemplateConfig();
+        renderSubjectField();
+        onStateChange();
+        showToast('Einstellungen zurückgesetzt');
       }
     });
 

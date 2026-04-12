@@ -43,7 +43,9 @@
     legalPrivacyUrl: 'https://www.example.com/datenschutz/',
     bookingUrl: '',
     bookingText: 'Jetzt Termin buchen',
-    bookingActive: false
+    bookingActive: false,
+    portalUrl: '',
+    portalText: 'Kundenportal öffnen'
   };
 
   // ── Style Definitions ──
@@ -66,6 +68,7 @@
         messageBody: true,
         ctaButton: true,
         bookingButton: false,
+        kundenportal: false,
         signature: true,
         footer: true,
         legalFooter: true
@@ -92,6 +95,7 @@
         messageBody: true,
         ctaButton: true,
         bookingButton: false,
+        kundenportal: false,
         signature: true,
         footer: true,
         legalFooter: true
@@ -118,6 +122,7 @@
         messageBody: true,
         ctaButton: true,
         bookingButton: false,
+        kundenportal: false,
         signature: false,
         footer: true,
         legalFooter: true
@@ -144,6 +149,7 @@
         messageBody: true,
         ctaButton: true,
         bookingButton: false,
+        kundenportal: false,
         signature: true,
         footer: true,
         legalFooter: true
@@ -170,6 +176,7 @@
         messageBody: true,
         ctaButton: true,
         bookingButton: false,
+        kundenportal: false,
         signature: true,
         footer: true,
         legalFooter: true
@@ -196,6 +203,7 @@
         messageBody: true,
         ctaButton: true,
         bookingButton: false,
+        kundenportal: false,
         signature: true,
         footer: true,
         legalFooter: true
@@ -222,6 +230,7 @@
         messageBody: true,
         ctaButton: true,
         bookingButton: false,
+        kundenportal: false,
         signature: true,
         footer: true,
         legalFooter: true
@@ -248,6 +257,7 @@
         messageBody: true,
         ctaButton: false,
         bookingButton: false,
+        kundenportal: false,
         signature: true,
         footer: true,
         legalFooter: true
@@ -274,6 +284,7 @@
         messageBody: true,
         ctaButton: true,
         bookingButton: false,
+        kundenportal: false,
         signature: false,
         footer: true,
         legalFooter: true
@@ -300,6 +311,7 @@
         messageBody: true,
         ctaButton: false,
         bookingButton: true,
+        kundenportal: false,
         signature: true,
         footer: true,
         legalFooter: true
@@ -333,6 +345,7 @@
     { key: 'messageBody', label: 'Message Body' },
     { key: 'ctaButton', label: 'CTA Button' },
     { key: 'bookingButton', label: 'Terminbuchung' },
+    { key: 'kundenportal', label: 'Kundenportal' },
     { key: 'signature', label: 'Signatur' },
     { key: 'footer', label: 'Footer' },
     { key: 'legalFooter', label: 'Legal-Footer' }
@@ -521,6 +534,26 @@
         html += `        </tr>\n`;
       }
       html += `\n`;
+    }
+
+    // Kundenportal
+    if (s.kundenportal && d.portalUrl) {
+      const portalHref = useExampleData ? '#' : d.portalUrl;
+      html += `        <!-- KUNDENPORTAL -->\n`;
+      html += `        <tr>\n`;
+      html += `          <td style="padding:0 30px 28px 30px;">\n`;
+      html += `            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f9f9f9;border-radius:4px;">\n`;
+      html += `              <tr>\n`;
+      html += `                <td style="padding:16px 20px;text-align:center;font-family:${font};">\n`;
+      html += `                  <p style="margin:0 0 10px 0;font-size:13px;color:${d.textColor};">Alle Ihre Tickets und Anfragen auf einen Blick:</p>\n`;
+      html += `                  <a href="${portalHref}" style="color:${d.primaryColor};text-decoration:none;font-size:14px;font-weight:bold;font-family:${font};">\n`;
+      html += `                    ${escapeHtml(d.portalText)}&nbsp;&rarr;\n`;
+      html += `                  </a>\n`;
+      html += `                </td>\n`;
+      html += `              </tr>\n`;
+      html += `            </table>\n`;
+      html += `          </td>\n`;
+      html += `        </tr>\n\n`;
     }
 
     return html;
@@ -833,6 +866,8 @@
     state.design.bookingUrl = $('#ds-booking-url').value;
     state.design.bookingText = $('#ds-booking-text').value;
     state.design.bookingActive = $('#ds-booking-active').checked;
+    state.design.portalUrl = $('#ds-portal-url').value;
+    state.design.portalText = $('#ds-portal-text').value;
   }
 
   // ── Write Design to UI ──
@@ -861,6 +896,8 @@
     $('#ds-booking-url').value = d.bookingUrl;
     $('#ds-booking-text').value = d.bookingText;
     $('#ds-booking-active').checked = d.bookingActive;
+    $('#ds-portal-url').value = d.portalUrl;
+    $('#ds-portal-text').value = d.portalText;
   }
 
   // ── Render Style Tabs ──
@@ -1243,7 +1280,8 @@
       '#ds-phone', '#ds-web', '#ds-certs', '#ds-font',
       '#ds-legal-ceo', '#ds-legal-court', '#ds-legal-regnr',
       '#ds-legal-vatid', '#ds-legal-imprint', '#ds-legal-privacy',
-      '#ds-booking-url', '#ds-booking-text'
+      '#ds-booking-url', '#ds-booking-text',
+      '#ds-portal-url', '#ds-portal-text'
     ];
     for (const sel of designInputs) {
       $(sel).addEventListener('input', () => {

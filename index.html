@@ -42,6 +42,30 @@
       <button class="btn" id="btn-export" title="Konfiguration als JSON exportieren">Export JSON</button>
       <button class="btn" id="btn-import" title="Konfiguration aus JSON importieren">Import JSON</button>
       <input type="file" id="import-file" accept=".json">
+      <div class="share-popover-wrapper" id="share-popover-wrapper">
+        <button class="btn" id="btn-share" title="Konfiguration als Link teilen">Link teilen</button>
+        <div class="share-popover" id="share-popover">
+          <div class="share-popover-header">
+            <span>Link teilen</span>
+            <button class="share-popover-close" id="share-popover-close">&times;</button>
+          </div>
+          <div class="share-popover-body">
+            <div class="share-state share-state--loading" id="share-state-loading">
+              <div class="share-spinner"></div>
+              <span>Link wird erstellt...</span>
+            </div>
+            <div class="share-state share-state--success" id="share-state-success" style="display:none;">
+              <input type="text" class="share-url-input" id="share-url-input" readonly>
+              <button class="btn btn-sm btn-primary" id="btn-copy-share-url">Kopieren</button>
+              <p class="share-expiry" id="share-expiry"></p>
+            </div>
+            <div class="share-state share-state--error" id="share-state-error" style="display:none;">
+              <p class="share-error-msg" id="share-error-msg">Link konnte nicht erstellt werden.</p>
+              <button class="btn btn-sm" id="btn-share-retry">Erneut versuchen</button>
+            </div>
+          </div>
+        </div>
+      </div>
       <div class="sponsor-dropdown">
         <button class="btn btn-sponsor" id="btn-sponsor" title="Support this project">☕ Support</button>
         <div class="sponsor-dropdown-menu" id="sponsor-dropdown-menu">
@@ -58,7 +82,7 @@
     <!-- Sidebar -->
     <aside class="sidebar" id="sidebar">
 
-      <!-- Style Selection -->
+      <!-- 1. Style Selection -->
       <div class="sidebar-section">
         <h3 class="sidebar-section-header"><span>Style</span><span class="chevron">▶</span></h3>
         <div class="sidebar-section-content">
@@ -66,7 +90,7 @@
         </div>
       </div>
 
-      <!-- Template Selection -->
+      <!-- 2. Template Selection -->
       <div class="sidebar-section">
         <h3 class="sidebar-section-header"><span>Template</span><span class="chevron">▶</span></h3>
         <div class="sidebar-section-content">
@@ -74,7 +98,30 @@
         </div>
       </div>
 
-      <!-- Design System -->
+      <!-- 3. Subject -->
+      <div class="sidebar-section">
+        <h3 class="sidebar-section-header"><span>Betreff</span><span class="chevron">▶</span></h3>
+        <div class="sidebar-section-content">
+          <div class="subject-row">
+            <input type="text" id="template-subject" placeholder="Betreff mit [Variablen]...">
+            <button class="btn btn-sm btn-insert-var" data-target="template-subject" title="Variable einfügen">+Var</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. Section Toggles -->
+      <div class="sidebar-section" id="section-toggles">
+        <h3 class="sidebar-section-header"><span>Sections</span><span class="chevron">▶</span></h3>
+        <div class="sidebar-section-content" id="section-toggles-content"></div>
+      </div>
+
+      <!-- 5. Template-specific Config -->
+      <div class="sidebar-section" id="template-config">
+        <h3 class="sidebar-section-header"><span>Template-Texte</span><span class="chevron">▶</span></h3>
+        <div class="sidebar-section-content" id="template-config-content"></div>
+      </div>
+
+      <!-- 6. Design System -->
       <div class="sidebar-section collapsed">
         <h3 class="sidebar-section-header"><span>Design System</span><span class="chevron">▶</span></h3>
         <div class="sidebar-section-content">
@@ -153,7 +200,52 @@
         </div>
       </div>
 
-      <!-- Legal / Rechtliche Angaben -->
+      <!-- 7. Terminbuchung -->
+      <div class="sidebar-section collapsed">
+        <h3 class="sidebar-section-header"><span>Terminbuchung</span><span class="chevron">▶</span></h3>
+        <div class="sidebar-section-content">
+
+          <div class="form-group">
+            <label>Buchungslink aktiv</label>
+            <label class="toggle" style="float:right;">
+              <input type="checkbox" id="ds-booking-active">
+              <span class="toggle-slider"></span>
+            </label>
+            <div style="clear:both;"></div>
+          </div>
+
+          <div class="form-group">
+            <label>Buchungslink-URL</label>
+            <input type="url" id="ds-booking-url" placeholder="https://cal.com/ihr-unternehmen/termin">
+          </div>
+
+          <div class="form-group">
+            <label>Buchungslink-Text</label>
+            <input type="text" id="ds-booking-text" value="Jetzt Termin buchen">
+          </div>
+
+        </div>
+      </div>
+
+      <!-- 8. Kundenportal -->
+      <div class="sidebar-section collapsed">
+        <h3 class="sidebar-section-header"><span>Kundenportal</span><span class="chevron">▶</span></h3>
+        <div class="sidebar-section-content">
+
+          <div class="form-group">
+            <label>Portal-URL</label>
+            <input type="url" id="ds-portal-url" placeholder="https://portal.example.com">
+          </div>
+
+          <div class="form-group">
+            <label>Link-Text</label>
+            <input type="text" id="ds-portal-text" value="Kundenportal öffnen">
+          </div>
+
+        </div>
+      </div>
+
+      <!-- 9. Rechtliche Angaben -->
       <div class="sidebar-section collapsed">
         <h3 class="sidebar-section-header"><span>Rechtliche Angaben</span><span class="chevron">▶</span></h3>
         <div class="sidebar-section-content">
@@ -189,56 +281,6 @@
           </div>
 
         </div>
-      </div>
-
-      <!-- Terminbuchung -->
-      <div class="sidebar-section collapsed">
-        <h3 class="sidebar-section-header"><span>Terminbuchung</span><span class="chevron">▶</span></h3>
-        <div class="sidebar-section-content">
-
-          <div class="form-group">
-            <label>Buchungslink aktiv</label>
-            <label class="toggle" style="float:right;">
-              <input type="checkbox" id="ds-booking-active">
-              <span class="toggle-slider"></span>
-            </label>
-            <div style="clear:both;"></div>
-          </div>
-
-          <div class="form-group">
-            <label>Buchungslink-URL</label>
-            <input type="url" id="ds-booking-url" placeholder="https://cal.com/ihr-unternehmen/termin">
-          </div>
-
-          <div class="form-group">
-            <label>Buchungslink-Text</label>
-            <input type="text" id="ds-booking-text" value="Jetzt Termin buchen">
-          </div>
-
-        </div>
-      </div>
-
-      <!-- Subject -->
-      <div class="sidebar-section">
-        <h3 class="sidebar-section-header"><span>Betreff</span><span class="chevron">▶</span></h3>
-        <div class="sidebar-section-content">
-          <div class="subject-row">
-            <input type="text" id="template-subject" placeholder="Betreff mit [Variablen]...">
-            <button class="btn btn-sm btn-insert-var" data-target="template-subject" title="Variable einfügen">+Var</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Section Toggles -->
-      <div class="sidebar-section" id="section-toggles">
-        <h3 class="sidebar-section-header"><span>Sections</span><span class="chevron">▶</span></h3>
-        <div class="sidebar-section-content" id="section-toggles-content"></div>
-      </div>
-
-      <!-- Template-specific Config -->
-      <div class="sidebar-section" id="template-config">
-        <h3 class="sidebar-section-header"><span>Template-Texte</span><span class="chevron">▶</span></h3>
-        <div class="sidebar-section-content" id="template-config-content"></div>
       </div>
 
     </aside>
@@ -311,6 +353,17 @@
       ·
       <a href="https://github.com/zwei-zeiler/vorlagen-generator" id="footer-repo-link" target="_blank" rel="noopener noreferrer">Repository</a>
   </footer>
+
+  <div class="confirm-modal-overlay" id="confirm-modal-overlay">
+    <div class="confirm-modal">
+      <h3>Konfiguration übernehmen?</h3>
+      <p>Möchten Sie die Konfiguration aus diesem Share-Link übernehmen? Ihre aktuelle Konfiguration wird dabei ersetzt.</p>
+      <div class="confirm-modal-actions">
+        <button class="btn" id="confirm-modal-cancel">Abbrechen</button>
+        <button class="btn btn-primary" id="confirm-modal-accept">Übernehmen</button>
+      </div>
+    </div>
+  </div>
 
   <script src="app.js"></script>
 </body>

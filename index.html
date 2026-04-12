@@ -42,6 +42,30 @@
       <button class="btn" id="btn-export" title="Konfiguration als JSON exportieren">Export JSON</button>
       <button class="btn" id="btn-import" title="Konfiguration aus JSON importieren">Import JSON</button>
       <input type="file" id="import-file" accept=".json">
+      <button class="btn" id="btn-share" title="Konfiguration als Link teilen">Link teilen</button>
+      <div class="share-popover-wrapper" id="share-popover-wrapper">
+        <div class="share-popover" id="share-popover">
+          <div class="share-popover-header">
+            <span>Link teilen</span>
+            <button class="share-popover-close" id="share-popover-close">&times;</button>
+          </div>
+          <div class="share-popover-body">
+            <div class="share-state share-state--loading" id="share-state-loading">
+              <div class="share-spinner"></div>
+              <span>Link wird erstellt...</span>
+            </div>
+            <div class="share-state share-state--success" id="share-state-success" style="display:none;">
+              <input type="text" class="share-url-input" id="share-url-input" readonly>
+              <button class="btn btn-sm btn-primary" id="btn-copy-share-url">Kopieren</button>
+              <p class="share-expiry" id="share-expiry"></p>
+            </div>
+            <div class="share-state share-state--error" id="share-state-error" style="display:none;">
+              <p class="share-error-msg" id="share-error-msg">Link konnte nicht erstellt werden.</p>
+              <button class="btn btn-sm" id="btn-share-retry">Erneut versuchen</button>
+            </div>
+          </div>
+        </div>
+      </div>
       <div class="sponsor-dropdown">
         <button class="btn btn-sponsor" id="btn-sponsor" title="Support this project">☕ Support</button>
         <div class="sponsor-dropdown-menu" id="sponsor-dropdown-menu">
@@ -329,6 +353,17 @@
       ·
       <a href="https://github.com/zwei-zeiler/vorlagen-generator" id="footer-repo-link" target="_blank" rel="noopener noreferrer">Repository</a>
   </footer>
+
+  <div class="confirm-modal-overlay" id="confirm-modal-overlay">
+    <div class="confirm-modal">
+      <h3>Konfiguration uebernehmen?</h3>
+      <p>Moechten Sie die Konfiguration aus diesem Share-Link uebernehmen? Ihre aktuelle Konfiguration wird dabei ersetzt.</p>
+      <div class="confirm-modal-actions">
+        <button class="btn" id="confirm-modal-cancel">Abbrechen</button>
+        <button class="btn btn-primary" id="confirm-modal-accept">Uebernehmen</button>
+      </div>
+    </div>
+  </div>
 
   <script src="app.js"></script>
 </body>

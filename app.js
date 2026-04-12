@@ -1607,7 +1607,8 @@
     $('#footer-repo-link').href = GITHUB_REPO_URL;
 
     // ── Share link detection ──
-    const shareParam = new URLSearchParams(window.location.search).get('share');
+    const shareParam = new URLSearchParams(window.location.search).get('share')
+      || (window.location.pathname.match(/^\/s\/(.+)$/) || [])[1];
     if (shareParam) {
       loadFromShareLink(shareParam);
     }

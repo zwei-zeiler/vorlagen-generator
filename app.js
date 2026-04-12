@@ -1401,7 +1401,7 @@
   async function init() {
     // Load autotask variables
     try {
-      const resp = await fetch('psa/autotask.json');
+      const resp = await fetch('/psa/autotask.json');
       psaVars = await resp.json();
     } catch (e) {
       console.error('Could not load PSA variables:', e);

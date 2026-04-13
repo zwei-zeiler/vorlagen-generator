@@ -31,6 +31,7 @@
     textColor: '#333333',
     accentColor: '#888888',
     logoUrl: '',
+    logoEnabled: true,
     company: 'Muster GmbH',
     claim: 'Ihr IT-Dienstleister',
     address: 'Musterstraße 1, 10115 Berlin',
@@ -375,6 +376,12 @@
     setTimeout(() => toast.classList.remove('visible'), 2500);
   }
 
+  function getLogoHtml(design, width, tagStyle) {
+    if (design.logoEnabled === false) return '';
+    const src = design.logoUrl || '/logo-default.svg';
+    return `<img src="${src}" width="${width}" alt="${design.company}" style="${tagStyle || 'display:block;'}" />`;
+  }
+
   // ── Build variable lookup map ──
   function buildVarMap() {
     const map = {};
@@ -613,7 +620,7 @@
       html += `            <table cellpadding="0" cellspacing="0" border="0" style="font-family:${font};font-size:13px;color:${d.textColor};line-height:1.4;">\n`;
       html += `              <tr>\n`;
       html += `                <td style="padding-right:15px;border-right:2px solid ${d.primaryColor};vertical-align:top;">\n`;
-      html += `                  <img src="${d.logoUrl}" width="120" alt="${d.company}" style="display:block;" />\n`;
+      html += `                  ${getLogoHtml(d, 120)}\n`;
       html += `                </td>\n`;
       html += `                <td style="padding-left:15px;vertical-align:top;">\n`;
       html += `                  <strong style="font-size:14px;color:${d.textColor};">${r('[Miscellaneous: Initiating Resource Name]')}</strong><br />\n`;
@@ -697,7 +704,7 @@
         html += `            <table width="100%" cellpadding="0" cellspacing="0" border="0">\n`;
         html += `              <tr>\n`;
         html += `                <td style="vertical-align:middle;">\n`;
-        html += `                  <img src="${d.logoUrl}" width="130" alt="${d.company}" style="display:block;" />\n`;
+        html += `                  ${getLogoHtml(d, 130)}\n`;
         html += `                </td>\n`;
         html += `                <td align="right" style="vertical-align:middle;color:#ffffff;font-size:13px;font-family:${font};">\n`;
         html += `                  ${d.company}\n`;
@@ -737,7 +744,7 @@
         html += `            <table width="100%" cellpadding="0" cellspacing="0" border="0">\n`;
         html += `              <tr>\n`;
         html += `                <td style="vertical-align:middle;">\n`;
-        html += `                  <img src="${d.logoUrl}" width="120" alt="${d.company}" style="display:block;" />\n`;
+        html += `                  ${getLogoHtml(d, 120)}\n`;
         html += `                </td>\n`;
         html += `                <td align="right" style="vertical-align:middle;color:${d.accentColor};font-size:12px;font-family:${font};">\n`;
         html += `                  ${d.company}\n`;
@@ -794,7 +801,7 @@
         html += `        <!-- HEADER -->\n`;
         html += `        <tr>\n`;
         html += `          <td align="center" style="padding:28px 30px 8px 30px;">\n`;
-        html += `            <img src="${d.logoUrl}" width="160" alt="${d.company}" style="display:block;" />\n`;
+        html += `            ${getLogoHtml(d, 160)}\n`;
         html += `          </td>\n`;
         html += `        </tr>\n`;
         html += `        <tr>\n`;
@@ -866,6 +873,7 @@
     state.design.legalVatId = $('#ds-legal-vatid').value;
     state.design.legalImprintUrl = $('#ds-legal-imprint').value;
     state.design.legalPrivacyUrl = $('#ds-legal-privacy').value;
+    state.design.logoEnabled = $('#ds-logo-enabled').checked;
     state.design.bookingUrl = $('#ds-booking-url').value;
     state.design.bookingText = $('#ds-booking-text').value;
     state.design.bookingActive = $('#ds-booking-active').checked;
@@ -896,6 +904,7 @@
     $('#ds-legal-vatid').value = d.legalVatId;
     $('#ds-legal-imprint').value = d.legalImprintUrl;
     $('#ds-legal-privacy').value = d.legalPrivacyUrl;
+    $('#ds-logo-enabled').checked = d.logoEnabled !== false;
     $('#ds-booking-url').value = d.bookingUrl;
     $('#ds-booking-text').value = d.bookingText;
     $('#ds-booking-active').checked = d.bookingActive;
@@ -1128,7 +1137,7 @@
   function updateSidebarBadges() {
     const d = state.design;
     const checks = {
-      'Design System': !d.logoUrl || d.company === 'Muster GmbH' || d.web === 'https://www.example.com',
+      'Design System': (d.logoEnabled !== false && !d.logoUrl) || d.company === 'Muster GmbH' || d.web === 'https://www.example.com',
       'Rechtliche Angaben': d.legalCeo === 'Max Mustermann' || d.legalRegNr === 'HRB 12345 B' || d.legalImprintUrl === 'https://www.example.com/impressum/',
       'Terminbuchung': false,
       'Kundenportal': false
@@ -1452,7 +1461,11 @@
       });
     }
 
-    // ── Booking active toggle ──
+    // ── Logo / Booking active toggles ──
+    $('#ds-logo-enabled').addEventListener('change', () => {
+      readDesignFromUI();
+      onStateChange();
+    });
     $('#ds-booking-active').addEventListener('change', () => {
       readDesignFromUI();
       onStateChange();

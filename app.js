@@ -49,14 +49,17 @@
     bookingText: 'Jetzt Termin buchen',
     bookingActive: false,
     portalUrl: '',
-    portalText: 'Kundenportal öffnen'
+    portalText: 'Kundenportal öffnen',
+    autotaskUrl: '',
+    autotaskLinkText: 'In Autotask öffnen'
   };
 
   // ── Style Definitions ──
   const STYLES = [
     { id: 'modern-card', name: 'Modern Card' },
     { id: 'clean-minimal', name: 'Clean Minimal' },
-    { id: 'corporate-classic', name: 'Corporate Classic' }
+    { id: 'corporate-classic', name: 'Corporate Classic' },
+    { id: 'internal-minimal', name: 'Internal Minimal' }
   ];
 
   // ── Default Templates ──
@@ -64,6 +67,7 @@
     {
       id: 'ticket-note',
       name: 'Ticket-Note an Kunde',
+      audience: 'customer',
       subject: '[Ticket: Note Title] / [Ticket: Ticket Number]',
       sections: {
         previewText: true,
@@ -91,6 +95,7 @@
     {
       id: 'ticket-accepted',
       name: 'Ticket angenommen',
+      audience: 'customer',
       subject: 'Ihr Ticket [Ticket: Ticket Number] wird bearbeitet',
       sections: {
         previewText: true,
@@ -118,6 +123,7 @@
     {
       id: 'ticket-confirmation',
       name: 'Eingangsbestätigung',
+      audience: 'customer',
       subject: 'Eingangsbestätigung: [Ticket: Title] / [Ticket: Ticket Number]',
       sections: {
         previewText: true,
@@ -145,6 +151,7 @@
     {
       id: 'ticket-closed',
       name: 'Ticket geschlossen',
+      audience: 'customer',
       subject: 'Ihr Ticket [Ticket: Ticket Number] wurde gelöst',
       sections: {
         previewText: true,
@@ -172,6 +179,7 @@
     {
       id: 'ticket-escalated',
       name: 'Ticket eskaliert',
+      audience: 'customer',
       subject: 'Ihr Ticket [Ticket: Ticket Number] wurde eskaliert',
       sections: {
         previewText: true,
@@ -199,6 +207,7 @@
     {
       id: 'ticket-feedback-request',
       name: 'Rückfrage an Kunde',
+      audience: 'customer',
       subject: 'Rückfrage zu Ihrem Ticket [Ticket: Ticket Number]',
       sections: {
         previewText: true,
@@ -226,6 +235,7 @@
     {
       id: 'sla-warning',
       name: 'SLA-Warnung',
+      audience: 'customer',
       subject: 'Update zu Ihrem Ticket [Ticket: Ticket Number]',
       sections: {
         previewText: true,
@@ -253,6 +263,7 @@
     {
       id: 'ticket-handover',
       name: 'Ticket-Übergabe (intern)',
+      audience: 'internal',
       subject: '[Intern] Ticket-Übergabe: [Ticket: Title] / [Ticket: Ticket Number]',
       sections: {
         previewText: true,
@@ -280,6 +291,7 @@
     {
       id: 'ticket-survey',
       name: 'Kundenzufriedenheits-Umfrage',
+      audience: 'customer',
       subject: 'Wie war unser Service? Ticket [Ticket: Ticket Number]',
       sections: {
         previewText: true,
@@ -307,6 +319,7 @@
     {
       id: 'ticket-booking',
       name: 'Termin zum Ticket buchen',
+      audience: 'customer',
       subject: 'Terminvereinbarung zu Ihrem Ticket [Ticket: Ticket Number]',
       sections: {
         previewText: true,
@@ -1176,6 +1189,19 @@
     }
   }
 
+  // ── State Migration (mutates state in-place, returns same reference) ──
+  function migrateState(state) {
+    if (state.templates) {
+      state.templates.forEach(t => {
+        if (!t.audience) t.audience = 'customer';
+        if (t.id === 'internal-notification' && t.config && !t.config.notificationType) {
+          t.config.notificationType = 'queue';
+        }
+      });
+    }
+    return state;
+  }
+
   function loadFromLocalStorage() {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
@@ -1185,6 +1211,7 @@
         state.templates = parsed.templates || JSON.parse(JSON.stringify(DEFAULT_TEMPLATES));
         state.activeTemplateId = parsed.activeTemplateId || 'ticket-note';
         state.activeStyle = parsed.activeStyle || 'modern-card';
+        migrateState(state);
         return true;
       }
     } catch (e) {
@@ -1217,6 +1244,7 @@
   function applyConfig(data) {
     if (data.design) state.design = { ...DEFAULT_DESIGN, ...data.design };
     if (data.templates) state.templates = data.templates;
+    migrateState(state);
     state.activeTemplateId = state.templates[0]?.id || 'ticket-note';
     state.activeStyle = data.activeStyle || 'modern-card';
     writeDesignToUI();

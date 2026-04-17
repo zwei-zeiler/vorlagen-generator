@@ -1062,15 +1062,23 @@
   function renderStyleTabs() {
     const container = $('#style-tabs');
     container.innerHTML = '';
+    const active = getActiveTemplate();
+    const isInternal = active && active.audience === 'internal';
     for (const s of STYLES) {
       const btn = document.createElement('button');
       btn.className = 'template-tab' + (s.id === state.activeStyle ? ' active' : '');
       btn.textContent = s.name;
-      btn.addEventListener('click', () => {
-        state.activeStyle = s.id;
-        renderStyleTabs();
-        onStateChange();
-      });
+      const shouldDisable = (isInternal && s.id !== 'internal-minimal') ||
+                            (!isInternal && s.id === 'internal-minimal');
+      if (shouldDisable) {
+        btn.disabled = true;
+      } else {
+        btn.addEventListener('click', () => {
+          state.activeStyle = s.id;
+          renderStyleTabs();
+          onStateChange();
+        });
+      }
       container.appendChild(btn);
     }
   }
@@ -1098,6 +1106,7 @@
         btn.textContent = t.name;
         btn.addEventListener('click', () => {
           state.activeTemplateId = t.id;
+          applyAudienceStyleLock();
           renderTemplateTabs();
           renderSectionToggles();
           renderTemplateConfig();
@@ -1345,6 +1354,16 @@
   }
 
   // ── State Migration (mutates state in-place, returns same reference) ──
+  function applyAudienceStyleLock() {
+    const active = getActiveTemplate();
+    if (!active) return;
+    if (active.audience === 'internal') {
+      state.activeStyle = 'internal-minimal';
+    } else if (state.activeStyle === 'internal-minimal') {
+      state.activeStyle = 'modern-card';
+    }
+  }
+
   function migrateState(state) {
     if (state.templates) {
       state.templates.forEach(t => {
@@ -1367,6 +1386,7 @@
         state.activeTemplateId = parsed.activeTemplateId || 'ticket-note';
         state.activeStyle = parsed.activeStyle || 'modern-card';
         migrateState(state);
+        applyAudienceStyleLock();
         return true;
       }
     } catch (e) {
@@ -1402,6 +1422,7 @@
     migrateState(state);
     state.activeTemplateId = state.templates[0]?.id || 'ticket-note';
     state.activeStyle = data.activeStyle || 'modern-card';
+    applyAudienceStyleLock();
     writeDesignToUI();
     renderStyleTabs();
     renderTemplateTabs();

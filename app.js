@@ -49,21 +49,49 @@
     bookingText: 'Jetzt Termin buchen',
     bookingActive: false,
     portalUrl: '',
-    portalText: 'Kundenportal öffnen'
+    portalText: 'Kundenportal öffnen',
+    autotaskUrl: '',
+    autotaskLinkText: 'In Autotask öffnen'
   };
 
   // ── Style Definitions ──
   const STYLES = [
     { id: 'modern-card', name: 'Modern Card' },
     { id: 'clean-minimal', name: 'Clean Minimal' },
-    { id: 'corporate-classic', name: 'Corporate Classic' }
+    { id: 'corporate-classic', name: 'Corporate Classic' },
+    { id: 'internal-minimal', name: 'Internal Minimal' }
   ];
+
+  // ── Notification Type Defaults ──
+  const NOTIFICATION_TYPE_DEFAULTS = {
+    queue: {
+      subjectPrefix: '[Queue]',
+      previewText: 'Neues Ticket in der Queue.',
+      intro: 'Ein neues Ticket ist in der Queue eingegangen und wartet auf Zuweisung.\n\nTitel: [Ticket: Title]\nPriorität: [Ticket: Priority]\nKunde: [Organization: Organization Name]'
+    },
+    assigned: {
+      subjectPrefix: '[Assigned]',
+      previewText: 'Ticket wurde dir zugewiesen.',
+      intro: 'Hallo [Resource: First Name],\n\ndir wurde ein Ticket zugewiesen.\n\nTitel: [Ticket: Title]\nPriorität: [Ticket: Priority]\nKunde: [Organization: Organization Name]'
+    },
+    sla: {
+      subjectPrefix: '[SLA]',
+      previewText: 'SLA-Warnung: Ticket nähert sich Fälligkeit.',
+      intro: 'Achtung: Das folgende Ticket nähert sich der SLA-Fälligkeit.\n\nTitel: [Ticket: Title]\nFälligkeit: [Ticket: Due Date]\nPriorität: [Ticket: Priority]'
+    }
+  };
+
+  function buildNotificationSubject(type) {
+    const prefix = NOTIFICATION_TYPE_DEFAULTS[type]?.subjectPrefix || '[Queue]';
+    return `${prefix} [Ticket: Ticket Number]: [Ticket: Title]`;
+  }
 
   // ── Default Templates ──
   const DEFAULT_TEMPLATES = [
     {
       id: 'ticket-note',
       name: 'Ticket-Note an Kunde',
+      audience: 'customer',
       subject: '[Ticket: Note Title] / [Ticket: Ticket Number]',
       sections: {
         previewText: true,
@@ -91,6 +119,7 @@
     {
       id: 'ticket-accepted',
       name: 'Ticket angenommen',
+      audience: 'customer',
       subject: 'Ihr Ticket [Ticket: Ticket Number] wird bearbeitet',
       sections: {
         previewText: true,
@@ -118,6 +147,7 @@
     {
       id: 'ticket-confirmation',
       name: 'Eingangsbestätigung',
+      audience: 'customer',
       subject: 'Eingangsbestätigung: [Ticket: Title] / [Ticket: Ticket Number]',
       sections: {
         previewText: true,
@@ -145,6 +175,7 @@
     {
       id: 'ticket-closed',
       name: 'Ticket geschlossen',
+      audience: 'customer',
       subject: 'Ihr Ticket [Ticket: Ticket Number] wurde gelöst',
       sections: {
         previewText: true,
@@ -172,6 +203,7 @@
     {
       id: 'ticket-escalated',
       name: 'Ticket eskaliert',
+      audience: 'customer',
       subject: 'Ihr Ticket [Ticket: Ticket Number] wurde eskaliert',
       sections: {
         previewText: true,
@@ -199,6 +231,7 @@
     {
       id: 'ticket-feedback-request',
       name: 'Rückfrage an Kunde',
+      audience: 'customer',
       subject: 'Rückfrage zu Ihrem Ticket [Ticket: Ticket Number]',
       sections: {
         previewText: true,
@@ -226,6 +259,7 @@
     {
       id: 'sla-warning',
       name: 'SLA-Warnung',
+      audience: 'customer',
       subject: 'Update zu Ihrem Ticket [Ticket: Ticket Number]',
       sections: {
         previewText: true,
@@ -253,6 +287,7 @@
     {
       id: 'ticket-handover',
       name: 'Ticket-Übergabe (intern)',
+      audience: 'internal',
       subject: '[Intern] Ticket-Übergabe: [Ticket: Title] / [Ticket: Ticket Number]',
       sections: {
         previewText: true,
@@ -264,7 +299,7 @@
         kundenportal: false,
         signature: true,
         footer: true,
-        legalFooter: true
+        legalFooter: false
       },
       config: {
         previewTextVar: 'Ticket-Übergabe: [Ticket: Title]',
@@ -280,6 +315,7 @@
     {
       id: 'ticket-survey',
       name: 'Kundenzufriedenheits-Umfrage',
+      audience: 'customer',
       subject: 'Wie war unser Service? Ticket [Ticket: Ticket Number]',
       sections: {
         previewText: true,
@@ -307,6 +343,7 @@
     {
       id: 'ticket-booking',
       name: 'Termin zum Ticket buchen',
+      audience: 'customer',
       subject: 'Terminvereinbarung zu Ihrem Ticket [Ticket: Ticket Number]',
       sections: {
         previewText: true,
@@ -328,6 +365,35 @@
         footerText: 'Diese Nachricht bezieht sich auf Ticket [Ticket: Ticket Number]. Bitte antworten Sie direkt auf diese E-Mail oder nutzen Sie das Kundenportal.',
         customHeading: 'Terminvereinbarung zu Ihrem Ticket',
         customIntro: 'Guten Tag [Contact: First Name] [Contact: Last Name],\n\nfür die weitere Bearbeitung Ihres Tickets möchten wir einen Termin mit Ihnen vereinbaren.\n\nBitte wählen Sie über den folgenden Link einen für Sie passenden Termin aus — ob Remote-Session oder Vor-Ort-Termin, wir richten uns nach Ihnen.\n\nZusätzliche Hinweise:',
+        headerColorOverride: ''
+      }
+    },
+    {
+      id: 'internal-notification',
+      name: 'Internal Notification',
+      audience: 'internal',
+      subject: buildNotificationSubject('queue'),
+      sections: {
+        previewText: true,
+        header: false,
+        ticketInfo: false,
+        messageBody: true,
+        ctaButton: true,
+        bookingButton: false,
+        kundenportal: false,
+        signature: false,
+        footer: false,
+        legalFooter: false
+      },
+      config: {
+        notificationType: 'queue',
+        previewTextVar: NOTIFICATION_TYPE_DEFAULTS.queue.previewText,
+        messageBodyVar: '',
+        ctaText: '',
+        ctaLink: '',
+        footerText: '',
+        customHeading: '[Ticket: Ticket Number]',
+        customIntro: NOTIFICATION_TYPE_DEFAULTS.queue.intro,
         headerColorOverride: ''
       }
     }
@@ -374,6 +440,14 @@
     toast.textContent = msg;
     toast.classList.add('visible');
     setTimeout(() => toast.classList.remove('visible'), 2500);
+  }
+
+  function validateAutotaskUrl(url) {
+    if (!url || !url.trim()) return { ok: true, sanitized: '', warn: null };
+    const trimmed = url.trim();
+    if (!/^https?:\/\//i.test(trimmed)) return { ok: false, sanitized: '', warn: 'bad-protocol' };
+    if (!trimmed.includes('{id}')) return { ok: true, sanitized: trimmed, warn: 'missing-id' };
+    return { ok: true, sanitized: trimmed, warn: null };
   }
 
   function getLogoHtml(design, width, tagStyle) {
@@ -644,6 +718,7 @@
 
   // ── Generate Legal Footer HTML ──
   function generateLegalFooterHtml(template, design, style) {
+    if (template.audience === 'internal') return '';
     const s = template.sections;
     if (!s.legalFooter) return '';
 
@@ -835,6 +910,73 @@
       html += `      </table>\n    </td>\n  </tr>\n</table>`;
     }
 
+    // ── Style: Internal Minimal ──
+    else if (style === 'internal-minimal') {
+      html += `<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f0f0f0;padding:20px 0;">\n  <tr>\n    <td align="center">\n      <table width="620" cellpadding="0" cellspacing="0" border="0" style="background:#ffffff;border:1px solid #e0e0e0;border-radius:4px;overflow:hidden;font-family:${font};">\n\n`;
+
+      // Preview text row (small gray text above heading)
+      if (s.previewText && c.previewTextVar) {
+        html += `        <!-- PREVIEW TEXT ROW -->\n`;
+        html += `        <tr>\n`;
+        html += `          <td style="padding:16px 30px 0 30px;font-size:11px;color:#666666;font-family:${font};">\n`;
+        html += `            ${r(c.previewTextVar)}\n`;
+        html += `          </td>\n`;
+        html += `        </tr>\n\n`;
+      }
+
+      // Compact heading: ticket number as H1
+      html += `        <!-- HEADING -->\n`;
+      html += `        <tr>\n`;
+      html += `          <td style="padding:24px 30px 8px 30px;">\n`;
+      html += `            <h1 style="margin:0;font-size:22px;font-weight:600;color:#1a1a1a;font-family:${font};">${r('[Ticket: Ticket Number]')}</h1>\n`;
+      html += `          </td>\n`;
+      html += `        </tr>\n\n`;
+
+      // Message body (custom intro + messageBodyVar)
+      if (s.messageBody) {
+        html += `        <!-- MESSAGE BODY -->\n`;
+        html += `        <tr>\n`;
+        html += `          <td style="padding:12px 30px 24px 30px;font-size:14px;color:#333333;line-height:1.6;font-family:${font};">\n`;
+        if (c.customIntro) {
+          const introLines = r(c.customIntro).split('\n');
+          for (const line of introLines) {
+            if (line.trim() === '') {
+              html += `            <br />\n`;
+            } else {
+              html += `            ${line}<br />\n`;
+            }
+          }
+        }
+        if (c.messageBodyVar) {
+          if (c.customIntro) html += `            <br />\n`;
+          html += `            ${r(c.messageBodyVar)}\n`;
+        }
+        html += `          </td>\n`;
+        html += `        </tr>\n\n`;
+      }
+
+      // Single Autotask CTA button
+      const exampleTicketNum = psaVars ? (buildVarMap()['Ticket: Ticket Number'] || 'T20250401.0042') : 'T20250401.0042';
+      const ctaHref = escapeHtml(useExampleData
+        ? (d.autotaskUrl ? d.autotaskUrl.replace('{id}', exampleTicketNum) : '#')
+        : (d.autotaskUrl ? d.autotaskUrl.replace('{id}', '[Ticket: Ticket Number]') : '#'));
+      const ctaLabel = escapeHtml(d.autotaskLinkText || 'In Autotask \u00f6ffnen');
+      html += `        <!-- AUTOTASK CTA -->\n`;
+      html += `        <tr>\n`;
+      html += `          <td style="padding:0 30px 28px 30px;" align="center">\n`;
+      html += `            <table cellpadding="0" cellspacing="0" border="0">\n`;
+      html += `              <tr>\n`;
+      html += `                <td style="background-color:#2c2c2c;border-radius:4px;">\n`;
+      html += `                  <a href="${ctaHref}" style="color:#ffffff;text-decoration:none;font-size:14px;font-weight:600;font-family:${font};padding:12px 28px;display:inline-block;">${ctaLabel}</a>\n`;
+      html += `                </td>\n`;
+      html += `              </tr>\n`;
+      html += `            </table>\n`;
+      html += `          </td>\n`;
+      html += `        </tr>\n\n`;
+
+      html += `      </table>\n    </td>\n  </tr>\n</table>`;
+    }
+
     return html;
   }
 
@@ -879,6 +1021,9 @@
     state.design.bookingActive = $('#ds-booking-active').checked;
     state.design.portalUrl = $('#ds-portal-url').value;
     state.design.portalText = $('#ds-portal-text').value;
+    const rawUrl = $('#ds-autotask-url').value.trim();
+    state.design.autotaskUrl = (!rawUrl || /^https?:\/\//i.test(rawUrl)) ? rawUrl : '';
+    state.design.autotaskLinkText = $('#ds-autotask-link-text').value;
   }
 
   // ── Write Design to UI ──
@@ -910,21 +1055,31 @@
     $('#ds-booking-active').checked = d.bookingActive;
     $('#ds-portal-url').value = d.portalUrl;
     $('#ds-portal-text').value = d.portalText;
+    $('#ds-autotask-url').value = d.autotaskUrl || '';
+    $('#ds-autotask-link-text').value = d.autotaskLinkText || '';
   }
 
   // ── Render Style Tabs ──
   function renderStyleTabs() {
     const container = $('#style-tabs');
     container.innerHTML = '';
+    const active = getActiveTemplate();
+    const isInternal = active && active.id === 'internal-notification';
     for (const s of STYLES) {
       const btn = document.createElement('button');
       btn.className = 'template-tab' + (s.id === state.activeStyle ? ' active' : '');
       btn.textContent = s.name;
-      btn.addEventListener('click', () => {
-        state.activeStyle = s.id;
-        renderStyleTabs();
-        onStateChange();
-      });
+      const shouldDisable = (isInternal && s.id !== 'internal-minimal') ||
+                            (!isInternal && s.id === 'internal-minimal');
+      if (shouldDisable) {
+        btn.disabled = true;
+      } else {
+        btn.addEventListener('click', () => {
+          state.activeStyle = s.id;
+          renderStyleTabs();
+          onStateChange();
+        });
+      }
       container.appendChild(btn);
     }
   }
@@ -933,21 +1088,40 @@
   function renderTemplateTabs() {
     const container = $('#template-tabs');
     container.innerHTML = '';
-    for (const t of state.templates) {
-      const btn = document.createElement('button');
-      btn.className = 'template-tab' + (t.id === state.activeTemplateId ? ' active' : '');
-      btn.textContent = t.name;
-      btn.addEventListener('click', () => {
-        state.activeTemplateId = t.id;
-        renderTemplateTabs();
-        renderSectionToggles();
-        renderTemplateConfig();
-        renderSubjectField();
-        renderPreview();
-        renderCodeOutput();
+
+    const customerTemplates = state.templates.filter(t => t.audience !== 'internal');
+    const internalTemplates = state.templates.filter(t => t.audience === 'internal');
+
+    function renderGroup(label, templates) {
+      if (templates.length === 0) return;
+      const heading = document.createElement('div');
+      heading.className = 'template-group-heading';
+      heading.textContent = label;
+      container.appendChild(heading);
+
+      const group = document.createElement('div');
+      group.className = 'template-group';
+      templates.forEach(t => {
+        const btn = document.createElement('button');
+        btn.className = 'template-tab' + (t.id === state.activeTemplateId ? ' active' : '');
+        btn.textContent = t.name;
+        btn.addEventListener('click', () => {
+          state.activeTemplateId = t.id;
+          applyAudienceStyleLock();
+          renderStyleTabs();
+          renderTemplateTabs();
+          renderSectionToggles();
+          renderTemplateConfig();
+          renderSubjectField();
+          onStateChange();
+        });
+        group.appendChild(btn);
       });
-      container.appendChild(btn);
+      container.appendChild(group);
     }
+
+    renderGroup('An Kunde', customerTemplates);
+    renderGroup('Intern', internalTemplates);
   }
 
   // ── Render Section Toggles ──
@@ -999,14 +1173,81 @@
     if (!template) return;
     const c = template.config;
 
+    // ── Notification-Type dropdown (internal-notification only) ──
+    if (template.audience === 'internal' && c.notificationType !== undefined) {
+      const group = document.createElement('div');
+      group.className = 'form-group';
+
+      const label = document.createElement('label');
+      label.setAttribute('for', 'tpl-notification-type');
+      label.textContent = 'Benachrichtigungstyp';
+
+      const select = document.createElement('select');
+      select.id = 'tpl-notification-type';
+
+      const options = [
+        { value: 'queue',    label: 'Neues Ticket in Queue' },
+        { value: 'assigned', label: 'Ticket zugewiesen' },
+        { value: 'sla',      label: 'SLA-Warnung' }
+      ];
+      for (const opt of options) {
+        const el = document.createElement('option');
+        el.value = opt.value;
+        el.textContent = opt.label;
+        if (opt.value === (c.notificationType || 'queue')) el.selected = true;
+        select.appendChild(el);
+      }
+
+      select.addEventListener('change', () => {
+        const newType = select.value;
+
+        // Reverse-lookup: check if each field still holds a known default value.
+        // If yes, it's safe to overwrite. If the user customised it, preserve.
+        const currentSubject = template.subject;
+        const currentPreview = c.previewTextVar;
+        const currentIntro   = c.customIntro;
+
+        const subjectIsDefault = Object.keys(NOTIFICATION_TYPE_DEFAULTS).some(
+          t => currentSubject === buildNotificationSubject(t)
+        );
+        const previewIsDefault = Object.keys(NOTIFICATION_TYPE_DEFAULTS).some(
+          t => currentPreview === NOTIFICATION_TYPE_DEFAULTS[t].previewText
+        );
+        const introIsDefault   = Object.keys(NOTIFICATION_TYPE_DEFAULTS).some(
+          t => currentIntro === NOTIFICATION_TYPE_DEFAULTS[t].intro
+        );
+
+        c.notificationType = newType;
+
+        if (subjectIsDefault) template.subject    = buildNotificationSubject(newType);
+        if (previewIsDefault) c.previewTextVar     = NOTIFICATION_TYPE_DEFAULTS[newType].previewText;
+        if (introIsDefault)   c.customIntro        = NOTIFICATION_TYPE_DEFAULTS[newType].intro;
+
+        renderSubjectField();
+        renderTemplateConfig();
+        onStateChange();
+      });
+
+      group.appendChild(label);
+      group.appendChild(select);
+      container.appendChild(group);
+    }
+
+    // ── Standard config fields ──
+    // For internal-audience templates, hide fields overridden by design
+    // (ctaLink/ctaText come from design.autotaskUrl/autotaskLinkText; footerText is unused).
+    const isInternal = template.audience === 'internal';
+
     const fields = [
       { key: 'customHeading', label: 'Überschrift', type: 'text', placeholder: 'z.B. Ihr Ticket wird bearbeitet' },
       { key: 'customIntro', label: 'Einleitungstext', type: 'textarea', placeholder: 'Begrüßung und Einleitung...' },
       { key: 'previewTextVar', label: 'Preview Text (Mail-Vorschau)', type: 'text', placeholder: '[Variable] oder freier Text' },
       { key: 'messageBodyVar', label: 'Nachrichtentext (Variable)', type: 'text', placeholder: 'z.B. [Ticket: Note Description]' },
-      { key: 'ctaText', label: 'CTA Button Text', type: 'text', placeholder: 'Ticket im Portal ansehen' },
-      { key: 'ctaLink', label: 'CTA Button Link', type: 'text', placeholder: '[Ticket: Ticket Number (with link)]' },
-      { key: 'footerText', label: 'Footer Text', type: 'text', placeholder: 'Fußzeilentext...' },
+      ...(!isInternal ? [
+        { key: 'ctaText', label: 'CTA Button Text', type: 'text', placeholder: 'Ticket im Portal ansehen' },
+        { key: 'ctaLink', label: 'CTA Button Link', type: 'text', placeholder: '[Ticket: Ticket Number (with link)]' },
+        { key: 'footerText', label: 'Footer Text', type: 'text', placeholder: 'Fußzeilentext...' },
+      ] : []),
       { key: 'headerColorOverride', label: 'Header-Farbe (Override)', type: 'text', placeholder: 'Leer = Design-Hauptfarbe, z.B. #4a4a4a' }
     ];
 
@@ -1136,11 +1377,15 @@
   // ── Sidebar Warning Badges ──
   function updateSidebarBadges() {
     const d = state.design;
+    const activeTemplate = getActiveTemplate();
+    const autotaskWarn = (d.autotaskUrl && !d.autotaskUrl.includes('{id}')) ||
+      (!d.autotaskUrl && activeTemplate && activeTemplate.audience === 'internal');
     const checks = {
       'Design System': (d.logoEnabled !== false && !d.logoUrl) || d.company === 'Muster GmbH' || d.web === 'https://www.example.com',
       'Rechtliche Angaben': d.legalCeo === 'Max Mustermann' || d.legalRegNr === 'HRB 12345 B' || d.legalImprintUrl === 'https://www.example.com/impressum/',
       'Terminbuchung': false,
-      'Kundenportal': false
+      'Kundenportal': false,
+      'Autotask': autotaskWarn
     };
     $$('.sidebar-section-header').forEach(header => {
       const label = header.querySelector('span:first-child');
@@ -1176,6 +1421,30 @@
     }
   }
 
+  // ── Audience Style Lock ──
+  function applyAudienceStyleLock() {
+    const active = getActiveTemplate();
+    if (!active) return;
+    if (active.id === 'internal-notification') {
+      state.activeStyle = 'internal-minimal';
+    } else if (state.activeStyle === 'internal-minimal') {
+      state.activeStyle = 'modern-card';
+    }
+  }
+
+  // ── State Migration (mutates state in-place, returns same reference) ──
+  function migrateState(state) {
+    if (state.templates) {
+      state.templates.forEach(t => {
+        if (!t.audience) t.audience = 'customer';
+        if (t.id === 'internal-notification' && t.config && !t.config.notificationType) {
+          t.config.notificationType = 'queue';
+        }
+      });
+    }
+    return state;
+  }
+
   function loadFromLocalStorage() {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
@@ -1185,6 +1454,8 @@
         state.templates = parsed.templates || JSON.parse(JSON.stringify(DEFAULT_TEMPLATES));
         state.activeTemplateId = parsed.activeTemplateId || 'ticket-note';
         state.activeStyle = parsed.activeStyle || 'modern-card';
+        migrateState(state);
+        applyAudienceStyleLock();
         return true;
       }
     } catch (e) {
@@ -1217,8 +1488,10 @@
   function applyConfig(data) {
     if (data.design) state.design = { ...DEFAULT_DESIGN, ...data.design };
     if (data.templates) state.templates = data.templates;
+    migrateState(state);
     state.activeTemplateId = state.templates[0]?.id || 'ticket-note';
     state.activeStyle = data.activeStyle || 'modern-card';
+    applyAudienceStyleLock();
     writeDesignToUI();
     renderStyleTabs();
     renderTemplateTabs();
@@ -1448,7 +1721,8 @@
       '#ds-legal-ceo', '#ds-legal-court', '#ds-legal-regnr',
       '#ds-legal-vatid', '#ds-legal-imprint', '#ds-legal-privacy',
       '#ds-booking-url', '#ds-booking-text',
-      '#ds-portal-url', '#ds-portal-text'
+      '#ds-portal-url', '#ds-portal-text',
+      '#ds-autotask-url', '#ds-autotask-link-text'
     ];
     for (const sel of designInputs) {
       $(sel).addEventListener('input', () => {
@@ -1460,6 +1734,18 @@
         onStateChange();
       });
     }
+
+    // ── Autotask URL blur validation ──
+    $('#ds-autotask-url').addEventListener('blur', function() {
+      const result = validateAutotaskUrl(this.value);
+      if (result.warn === 'bad-protocol') {
+        this.value = '';
+        readDesignFromUI();
+        onStateChange();
+        showToast('Nur http(s) URLs erlaubt — Eingabe verworfen');
+      }
+      updateSidebarBadges();
+    });
 
     // ── Logo / Booking active toggles ──
     $('#ds-logo-enabled').addEventListener('change', () => {

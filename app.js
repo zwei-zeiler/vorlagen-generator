@@ -299,7 +299,7 @@
         kundenportal: false,
         signature: true,
         footer: true,
-        legalFooter: true
+        legalFooter: false
       },
       config: {
         previewTextVar: 'Ticket-Übergabe: [Ticket: Title]',
@@ -957,9 +957,9 @@
 
       // Single Autotask CTA button
       const exampleTicketNum = psaVars ? (buildVarMap()['Ticket: Ticket Number'] || 'T20250401.0042') : 'T20250401.0042';
-      const ctaHref = useExampleData
+      const ctaHref = escapeHtml(useExampleData
         ? (d.autotaskUrl ? d.autotaskUrl.replace('{id}', exampleTicketNum) : '#')
-        : (d.autotaskUrl ? d.autotaskUrl.replace('{id}', '[Ticket: Ticket Number]') : '#');
+        : (d.autotaskUrl ? d.autotaskUrl.replace('{id}', '[Ticket: Ticket Number]') : '#'));
       const ctaLabel = escapeHtml(d.autotaskLinkText || 'In Autotask \u00f6ffnen');
       html += `        <!-- AUTOTASK CTA -->\n`;
       html += `        <tr>\n`;
@@ -1021,7 +1021,8 @@
     state.design.bookingActive = $('#ds-booking-active').checked;
     state.design.portalUrl = $('#ds-portal-url').value;
     state.design.portalText = $('#ds-portal-text').value;
-    state.design.autotaskUrl = $('#ds-autotask-url').value;
+    const rawUrl = $('#ds-autotask-url').value.trim();
+    state.design.autotaskUrl = (!rawUrl || /^https?:\/\//i.test(rawUrl)) ? rawUrl : '';
     state.design.autotaskLinkText = $('#ds-autotask-link-text').value;
   }
 
@@ -1063,7 +1064,7 @@
     const container = $('#style-tabs');
     container.innerHTML = '';
     const active = getActiveTemplate();
-    const isInternal = active && active.audience === 'internal';
+    const isInternal = active && active.id === 'internal-notification';
     for (const s of STYLES) {
       const btn = document.createElement('button');
       btn.className = 'template-tab' + (s.id === state.activeStyle ? ' active' : '');
@@ -1173,7 +1174,7 @@
     const c = template.config;
 
     // ── Notification-Type dropdown (internal-notification only) ──
-    if (template.id === 'internal-notification' && template.audience === 'internal') {
+    if (template.audience === 'internal' && c.notificationType !== undefined) {
       const group = document.createElement('div');
       group.className = 'form-group';
 
@@ -1420,17 +1421,18 @@
     }
   }
 
-  // ── State Migration (mutates state in-place, returns same reference) ──
+  // ── Audience Style Lock ──
   function applyAudienceStyleLock() {
     const active = getActiveTemplate();
     if (!active) return;
-    if (active.audience === 'internal') {
+    if (active.id === 'internal-notification') {
       state.activeStyle = 'internal-minimal';
     } else if (state.activeStyle === 'internal-minimal') {
       state.activeStyle = 'modern-card';
     }
   }
 
+  // ── State Migration (mutates state in-place, returns same reference) ──
   function migrateState(state) {
     if (state.templates) {
       state.templates.forEach(t => {

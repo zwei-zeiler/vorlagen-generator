@@ -1107,12 +1107,12 @@
         btn.addEventListener('click', () => {
           state.activeTemplateId = t.id;
           applyAudienceStyleLock();
+          renderStyleTabs();
           renderTemplateTabs();
           renderSectionToggles();
           renderTemplateConfig();
           renderSubjectField();
-          renderPreview();
-          renderCodeOutput();
+          onStateChange();
         });
         group.appendChild(btn);
       });

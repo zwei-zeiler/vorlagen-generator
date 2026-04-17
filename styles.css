@@ -879,3 +879,9 @@ body {
   gap: 8px;
   justify-content: flex-end;
 }
+
+.field-hint {
+  font-size: 11px;
+  color: var(--ui-text-secondary, #888);
+  margin: 2px 0 0 0;
+}

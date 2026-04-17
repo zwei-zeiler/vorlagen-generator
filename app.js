@@ -945,6 +945,8 @@
     state.design.bookingActive = $('#ds-booking-active').checked;
     state.design.portalUrl = $('#ds-portal-url').value;
     state.design.portalText = $('#ds-portal-text').value;
+    state.design.autotaskUrl = $('#ds-autotask-url').value;
+    state.design.autotaskLinkText = $('#ds-autotask-link-text').value;
   }
 
   // ── Write Design to UI ──
@@ -976,6 +978,8 @@
     $('#ds-booking-active').checked = d.bookingActive;
     $('#ds-portal-url').value = d.portalUrl;
     $('#ds-portal-text').value = d.portalText;
+    $('#ds-autotask-url').value = d.autotaskUrl || '';
+    $('#ds-autotask-link-text').value = d.autotaskLinkText || '';
   }
 
   // ── Render Style Tabs ──
@@ -1529,7 +1533,8 @@
       '#ds-legal-ceo', '#ds-legal-court', '#ds-legal-regnr',
       '#ds-legal-vatid', '#ds-legal-imprint', '#ds-legal-privacy',
       '#ds-booking-url', '#ds-booking-text',
-      '#ds-portal-url', '#ds-portal-text'
+      '#ds-portal-url', '#ds-portal-text',
+      '#ds-autotask-url', '#ds-autotask-link-text'
     ];
     for (const sel of designInputs) {
       $(sel).addEventListener('input', () => {

@@ -910,6 +910,73 @@
       html += `      </table>\n    </td>\n  </tr>\n</table>`;
     }
 
+    // ── Style: Internal Minimal ──
+    else if (style === 'internal-minimal') {
+      html += `<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f0f0f0;padding:20px 0;">\n  <tr>\n    <td align="center">\n      <table width="620" cellpadding="0" cellspacing="0" border="0" style="background:#ffffff;border:1px solid #e0e0e0;border-radius:4px;overflow:hidden;font-family:${font};">\n\n`;
+
+      // Preview text row (small gray text above heading)
+      if (s.previewText && c.previewTextVar) {
+        html += `        <!-- PREVIEW TEXT ROW -->\n`;
+        html += `        <tr>\n`;
+        html += `          <td style="padding:16px 30px 0 30px;font-size:11px;color:#666666;font-family:${font};">\n`;
+        html += `            ${r(c.previewTextVar)}\n`;
+        html += `          </td>\n`;
+        html += `        </tr>\n\n`;
+      }
+
+      // Compact heading: ticket number as H1
+      html += `        <!-- HEADING -->\n`;
+      html += `        <tr>\n`;
+      html += `          <td style="padding:24px 30px 8px 30px;">\n`;
+      html += `            <h1 style="margin:0;font-size:22px;font-weight:600;color:#1a1a1a;font-family:${font};">${r('[Ticket: Ticket Number]')}</h1>\n`;
+      html += `          </td>\n`;
+      html += `        </tr>\n\n`;
+
+      // Message body (custom intro + messageBodyVar)
+      if (s.messageBody) {
+        html += `        <!-- MESSAGE BODY -->\n`;
+        html += `        <tr>\n`;
+        html += `          <td style="padding:12px 30px 24px 30px;font-size:14px;color:#333333;line-height:1.6;font-family:${font};">\n`;
+        if (c.customIntro) {
+          const introLines = r(c.customIntro).split('\n');
+          for (const line of introLines) {
+            if (line.trim() === '') {
+              html += `            <br />\n`;
+            } else {
+              html += `            ${line}<br />\n`;
+            }
+          }
+        }
+        if (c.messageBodyVar) {
+          if (c.customIntro) html += `            <br />\n`;
+          html += `            ${r(c.messageBodyVar)}\n`;
+        }
+        html += `          </td>\n`;
+        html += `        </tr>\n\n`;
+      }
+
+      // Single Autotask CTA button
+      const exampleTicketNum = psaVars ? (buildVarMap()['Ticket: Ticket Number'] || 'T20250401.0042') : 'T20250401.0042';
+      const ctaHref = useExampleData
+        ? (d.autotaskUrl ? d.autotaskUrl.replace('{id}', exampleTicketNum) : '#')
+        : (d.autotaskUrl ? d.autotaskUrl.replace('{id}', '[Ticket: Ticket Number]') : '#');
+      const ctaLabel = escapeHtml(d.autotaskLinkText || 'In Autotask \u00f6ffnen');
+      html += `        <!-- AUTOTASK CTA -->\n`;
+      html += `        <tr>\n`;
+      html += `          <td style="padding:0 30px 28px 30px;" align="center">\n`;
+      html += `            <table cellpadding="0" cellspacing="0" border="0">\n`;
+      html += `              <tr>\n`;
+      html += `                <td style="background-color:#2c2c2c;border-radius:4px;">\n`;
+      html += `                  <a href="${ctaHref}" style="color:#ffffff;text-decoration:none;font-size:14px;font-weight:600;font-family:${font};padding:12px 28px;display:inline-block;">${ctaLabel}</a>\n`;
+      html += `                </td>\n`;
+      html += `              </tr>\n`;
+      html += `            </table>\n`;
+      html += `          </td>\n`;
+      html += `        </tr>\n\n`;
+
+      html += `      </table>\n    </td>\n  </tr>\n</table>`;
+    }
+
     return html;
   }
 

@@ -1012,21 +1012,39 @@
   function renderTemplateTabs() {
     const container = $('#template-tabs');
     container.innerHTML = '';
-    for (const t of state.templates) {
-      const btn = document.createElement('button');
-      btn.className = 'template-tab' + (t.id === state.activeTemplateId ? ' active' : '');
-      btn.textContent = t.name;
-      btn.addEventListener('click', () => {
-        state.activeTemplateId = t.id;
-        renderTemplateTabs();
-        renderSectionToggles();
-        renderTemplateConfig();
-        renderSubjectField();
-        renderPreview();
-        renderCodeOutput();
+
+    const customerTemplates = state.templates.filter(t => t.audience !== 'internal');
+    const internalTemplates = state.templates.filter(t => t.audience === 'internal');
+
+    function renderGroup(label, templates) {
+      if (templates.length === 0) return;
+      const heading = document.createElement('div');
+      heading.className = 'template-group-heading';
+      heading.textContent = label;
+      container.appendChild(heading);
+
+      const group = document.createElement('div');
+      group.className = 'template-group';
+      templates.forEach(t => {
+        const btn = document.createElement('button');
+        btn.className = 'template-tab' + (t.id === state.activeTemplateId ? ' active' : '');
+        btn.textContent = t.name;
+        btn.addEventListener('click', () => {
+          state.activeTemplateId = t.id;
+          renderTemplateTabs();
+          renderSectionToggles();
+          renderTemplateConfig();
+          renderSubjectField();
+          renderPreview();
+          renderCodeOutput();
+        });
+        group.appendChild(btn);
       });
-      container.appendChild(btn);
+      container.appendChild(group);
     }
+
+    renderGroup('An Kunde', customerTemplates);
+    renderGroup('Intern', internalTemplates);
   }
 
   // ── Render Section Toggles ──

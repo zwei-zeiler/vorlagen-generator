@@ -62,6 +62,30 @@
     { id: 'internal-minimal', name: 'Internal Minimal' }
   ];
 
+  // ── Notification Type Defaults ──
+  const NOTIFICATION_TYPE_DEFAULTS = {
+    queue: {
+      subjectPrefix: '[Queue]',
+      previewText: 'Neues Ticket in der Queue.',
+      intro: 'Ein neues Ticket ist in der Queue eingegangen und wartet auf Zuweisung.\n\nTitel: [Ticket: Title]\nPriorität: [Ticket: Priority]\nKunde: [Organization: Organization Name]'
+    },
+    assigned: {
+      subjectPrefix: '[Assigned]',
+      previewText: 'Ticket wurde dir zugewiesen.',
+      intro: 'Hallo [Resource: First Name],\n\ndir wurde ein Ticket zugewiesen.\n\nTitel: [Ticket: Title]\nPriorität: [Ticket: Priority]\nKunde: [Organization: Organization Name]'
+    },
+    sla: {
+      subjectPrefix: '[SLA]',
+      previewText: 'SLA-Warnung: Ticket nähert sich Fälligkeit.',
+      intro: 'Achtung: Das folgende Ticket nähert sich der SLA-Fälligkeit.\n\nTitel: [Ticket: Title]\nFälligkeit: [Ticket: Due Date]\nPriorität: [Ticket: Priority]'
+    }
+  };
+
+  function buildNotificationSubject(type) {
+    const prefix = NOTIFICATION_TYPE_DEFAULTS[type]?.subjectPrefix || '[Queue]';
+    return `${prefix} [Ticket: Ticket Number]: [Ticket: Title]`;
+  }
+
   // ── Default Templates ──
   const DEFAULT_TEMPLATES = [
     {
@@ -341,6 +365,35 @@
         footerText: 'Diese Nachricht bezieht sich auf Ticket [Ticket: Ticket Number]. Bitte antworten Sie direkt auf diese E-Mail oder nutzen Sie das Kundenportal.',
         customHeading: 'Terminvereinbarung zu Ihrem Ticket',
         customIntro: 'Guten Tag [Contact: First Name] [Contact: Last Name],\n\nfür die weitere Bearbeitung Ihres Tickets möchten wir einen Termin mit Ihnen vereinbaren.\n\nBitte wählen Sie über den folgenden Link einen für Sie passenden Termin aus — ob Remote-Session oder Vor-Ort-Termin, wir richten uns nach Ihnen.\n\nZusätzliche Hinweise:',
+        headerColorOverride: ''
+      }
+    },
+    {
+      id: 'internal-notification',
+      name: 'Internal Notification',
+      audience: 'internal',
+      subject: buildNotificationSubject('queue'),
+      sections: {
+        previewText: true,
+        header: false,
+        ticketInfo: false,
+        messageBody: true,
+        ctaButton: true,
+        bookingButton: false,
+        kundenportal: false,
+        signature: false,
+        footer: false,
+        legalFooter: false
+      },
+      config: {
+        notificationType: 'queue',
+        previewTextVar: NOTIFICATION_TYPE_DEFAULTS.queue.previewText,
+        messageBodyVar: '',
+        ctaText: '',
+        ctaLink: '',
+        footerText: '',
+        customHeading: '[Ticket: Ticket Number]',
+        customIntro: NOTIFICATION_TYPE_DEFAULTS.queue.intro,
         headerColorOverride: ''
       }
     }

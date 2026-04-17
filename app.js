@@ -1172,14 +1172,81 @@
     if (!template) return;
     const c = template.config;
 
+    // ── Notification-Type dropdown (internal-notification only) ──
+    if (template.id === 'internal-notification' && template.audience === 'internal') {
+      const group = document.createElement('div');
+      group.className = 'form-group';
+
+      const label = document.createElement('label');
+      label.setAttribute('for', 'tpl-notification-type');
+      label.textContent = 'Benachrichtigungstyp';
+
+      const select = document.createElement('select');
+      select.id = 'tpl-notification-type';
+
+      const options = [
+        { value: 'queue',    label: 'Neues Ticket in Queue' },
+        { value: 'assigned', label: 'Ticket zugewiesen' },
+        { value: 'sla',      label: 'SLA-Warnung' }
+      ];
+      for (const opt of options) {
+        const el = document.createElement('option');
+        el.value = opt.value;
+        el.textContent = opt.label;
+        if (opt.value === (c.notificationType || 'queue')) el.selected = true;
+        select.appendChild(el);
+      }
+
+      select.addEventListener('change', () => {
+        const newType = select.value;
+
+        // Reverse-lookup: check if each field still holds a known default value.
+        // If yes, it's safe to overwrite. If the user customised it, preserve.
+        const currentSubject = template.subject;
+        const currentPreview = c.previewTextVar;
+        const currentIntro   = c.customIntro;
+
+        const subjectIsDefault = Object.keys(NOTIFICATION_TYPE_DEFAULTS).some(
+          t => currentSubject === buildNotificationSubject(t)
+        );
+        const previewIsDefault = Object.keys(NOTIFICATION_TYPE_DEFAULTS).some(
+          t => currentPreview === NOTIFICATION_TYPE_DEFAULTS[t].previewText
+        );
+        const introIsDefault   = Object.keys(NOTIFICATION_TYPE_DEFAULTS).some(
+          t => currentIntro === NOTIFICATION_TYPE_DEFAULTS[t].intro
+        );
+
+        c.notificationType = newType;
+
+        if (subjectIsDefault) template.subject    = buildNotificationSubject(newType);
+        if (previewIsDefault) c.previewTextVar     = NOTIFICATION_TYPE_DEFAULTS[newType].previewText;
+        if (introIsDefault)   c.customIntro        = NOTIFICATION_TYPE_DEFAULTS[newType].intro;
+
+        renderSubjectField();
+        renderTemplateConfig();
+        onStateChange();
+      });
+
+      group.appendChild(label);
+      group.appendChild(select);
+      container.appendChild(group);
+    }
+
+    // ── Standard config fields ──
+    // For internal-audience templates, hide fields overridden by design
+    // (ctaLink/ctaText come from design.autotaskUrl/autotaskLinkText; footerText is unused).
+    const isInternal = template.audience === 'internal';
+
     const fields = [
       { key: 'customHeading', label: 'Überschrift', type: 'text', placeholder: 'z.B. Ihr Ticket wird bearbeitet' },
       { key: 'customIntro', label: 'Einleitungstext', type: 'textarea', placeholder: 'Begrüßung und Einleitung...' },
       { key: 'previewTextVar', label: 'Preview Text (Mail-Vorschau)', type: 'text', placeholder: '[Variable] oder freier Text' },
       { key: 'messageBodyVar', label: 'Nachrichtentext (Variable)', type: 'text', placeholder: 'z.B. [Ticket: Note Description]' },
-      { key: 'ctaText', label: 'CTA Button Text', type: 'text', placeholder: 'Ticket im Portal ansehen' },
-      { key: 'ctaLink', label: 'CTA Button Link', type: 'text', placeholder: '[Ticket: Ticket Number (with link)]' },
-      { key: 'footerText', label: 'Footer Text', type: 'text', placeholder: 'Fußzeilentext...' },
+      ...(!isInternal ? [
+        { key: 'ctaText', label: 'CTA Button Text', type: 'text', placeholder: 'Ticket im Portal ansehen' },
+        { key: 'ctaLink', label: 'CTA Button Link', type: 'text', placeholder: '[Ticket: Ticket Number (with link)]' },
+        { key: 'footerText', label: 'Footer Text', type: 'text', placeholder: 'Fußzeilentext...' },
+      ] : []),
       { key: 'headerColorOverride', label: 'Header-Farbe (Override)', type: 'text', placeholder: 'Leer = Design-Hauptfarbe, z.B. #4a4a4a' }
     ];
 

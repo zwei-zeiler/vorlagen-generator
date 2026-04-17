@@ -442,6 +442,14 @@
     setTimeout(() => toast.classList.remove('visible'), 2500);
   }
 
+  function validateAutotaskUrl(url) {
+    if (!url || !url.trim()) return { ok: true, sanitized: '', warn: null };
+    const trimmed = url.trim();
+    if (!/^https?:\/\//i.test(trimmed)) return { ok: false, sanitized: '', warn: 'bad-protocol' };
+    if (!trimmed.includes('{id}')) return { ok: true, sanitized: trimmed, warn: 'missing-id' };
+    return { ok: true, sanitized: trimmed, warn: null };
+  }
+
   function getLogoHtml(design, width, tagStyle) {
     if (design.logoEnabled === false) return '';
     const src = design.logoUrl || '/logo-default.svg';
@@ -710,6 +718,7 @@
 
   // ── Generate Legal Footer HTML ──
   function generateLegalFooterHtml(template, design, style) {
+    if (template.audience === 'internal') return '';
     const s = template.sections;
     if (!s.legalFooter) return '';
 
@@ -1206,11 +1215,15 @@
   // ── Sidebar Warning Badges ──
   function updateSidebarBadges() {
     const d = state.design;
+    const activeTemplate = getActiveTemplate();
+    const autotaskWarn = (d.autotaskUrl && !d.autotaskUrl.includes('{id}')) ||
+      (!d.autotaskUrl && activeTemplate && activeTemplate.audience === 'internal');
     const checks = {
       'Design System': (d.logoEnabled !== false && !d.logoUrl) || d.company === 'Muster GmbH' || d.web === 'https://www.example.com',
       'Rechtliche Angaben': d.legalCeo === 'Max Mustermann' || d.legalRegNr === 'HRB 12345 B' || d.legalImprintUrl === 'https://www.example.com/impressum/',
       'Terminbuchung': false,
-      'Kundenportal': false
+      'Kundenportal': false,
+      'Autotask': autotaskWarn
     };
     $$('.sidebar-section-header').forEach(header => {
       const label = header.querySelector('span:first-child');
@@ -1546,6 +1559,18 @@
         onStateChange();
       });
     }
+
+    // ── Autotask URL blur validation ──
+    $('#ds-autotask-url').addEventListener('blur', function() {
+      const result = validateAutotaskUrl(this.value);
+      if (result.warn === 'bad-protocol') {
+        this.value = '';
+        readDesignFromUI();
+        onStateChange();
+        showToast('Nur http(s) URLs erlaubt — Eingabe verworfen');
+      }
+      updateSidebarBadges();
+    });
 
     // ── Logo / Booking active toggles ──
     $('#ds-logo-enabled').addEventListener('change', () => {

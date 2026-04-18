@@ -1435,10 +1435,22 @@
   // ── State Migration (mutates state in-place, returns same reference) ──
   function migrateState(state) {
     if (state.templates) {
+      const defaultById = new Map(DEFAULT_TEMPLATES.map(t => [t.id, t]));
+
       state.templates.forEach(t => {
-        if (!t.audience) t.audience = 'customer';
+        if (!t.audience) {
+          const def = defaultById.get(t.id);
+          t.audience = def ? def.audience : 'customer';
+        }
         if (t.id === 'internal-notification' && t.config && !t.config.notificationType) {
           t.config.notificationType = 'queue';
+        }
+      });
+
+      const existingIds = new Set(state.templates.map(t => t.id));
+      DEFAULT_TEMPLATES.forEach(def => {
+        if (!existingIds.has(def.id)) {
+          state.templates.push(JSON.parse(JSON.stringify(def)));
         }
       });
     }

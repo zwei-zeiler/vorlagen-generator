@@ -891,6 +891,7 @@ body {
   flex-wrap: wrap;
   gap: 4px;
   margin-bottom: 10px;
+  width: 100%;
 }
 
 .template-group-heading {
@@ -900,6 +901,7 @@ body {
   color: var(--ui-text-secondary, #888);
   margin: 8px 0 6px 0;
   letter-spacing: 0.5px;
+  width: 100%;
 }
 
 .template-group-heading:first-child {

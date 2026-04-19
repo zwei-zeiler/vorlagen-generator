@@ -1438,9 +1438,11 @@
       const defaultById = new Map(DEFAULT_TEMPLATES.map(t => [t.id, t]));
 
       state.templates.forEach(t => {
-        if (!t.audience) {
-          const def = defaultById.get(t.id);
-          t.audience = def ? def.audience : 'customer';
+        const def = defaultById.get(t.id);
+        if (def) {
+          t.audience = def.audience;
+        } else if (!t.audience) {
+          t.audience = 'customer';
         }
         if (t.id === 'internal-notification' && t.config && !t.config.notificationType) {
           t.config.notificationType = 'queue';

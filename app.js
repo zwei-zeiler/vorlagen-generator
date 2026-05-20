@@ -980,6 +980,89 @@
     return html;
   }
 
+  // ── Generate Plain-Text version (for Autotask "Nur-Text" field) ──
+  // Mirrors the structure of generateEmailHtml but strips all styling and
+  // collapses whitespace, so paste into a plain-text editor stays clean.
+  function generateEmailText(template, design, useExampleData) {
+    const style = state.activeStyle;
+    const d = design;
+    const t = template;
+    const s = t.sections;
+    const c = t.config;
+    const r = useExampleData ? replaceVarsWithExamples : (v) => v;
+
+    const blocks = [];
+
+    if (style === 'internal-minimal') {
+      // Heading is always the ticket number for this style
+      blocks.push(r('[Ticket: Ticket Number]'));
+      if (s.messageBody) {
+        if (c.customIntro) blocks.push(r(c.customIntro));
+        if (c.messageBodyVar) blocks.push(r(c.messageBodyVar));
+      }
+      if (d.autotaskUrl) {
+        const url = useExampleData
+          ? d.autotaskUrl.replace('{id}', 'T20250401.0042')
+          : d.autotaskUrl.replace('{id}', '[Ticket: Ticket Number]');
+        blocks.push(`${d.autotaskLinkText || 'In Autotask öffnen'}: ${url}`);
+      }
+    } else {
+      if (s.ticketInfo) {
+        blocks.push(
+          `${r('[Ticket: Title]')}\n` +
+          `Ticket ${r('[Ticket: Ticket Number]')} | Status: ${r('[Ticket: Status]')} | Priorität: ${r('[Ticket: Priority]')}`
+        );
+      }
+
+      if (s.messageBody) {
+        if (c.customHeading) blocks.push(r(c.customHeading));
+        if (c.customIntro) blocks.push(r(c.customIntro));
+        if (c.messageBodyVar) blocks.push(r(c.messageBodyVar));
+      }
+
+      if (s.ctaButton && c.ctaText) {
+        const link = c.ctaLink ? r(c.ctaLink) : '';
+        blocks.push(link ? `${r(c.ctaText)}: ${link}` : r(c.ctaText));
+      }
+
+      if (s.bookingButton && d.bookingUrl) {
+        blocks.push(`${d.bookingText || 'Termin buchen'}: ${d.bookingUrl}`);
+      }
+
+      if (s.kundenportal && d.portalUrl) {
+        blocks.push(`${d.portalText || 'Kundenportal'}: ${d.portalUrl}`);
+      }
+
+      if (s.signature) {
+        const sig = [r('[Miscellaneous: Initiating Resource Name]')];
+        const companyLine = d.claim ? `${d.company} · ${d.claim}` : d.company;
+        sig.push(companyLine);
+        if (d.address) sig.push(d.address);
+        if (d.phone) sig.push(`Tel: ${d.phone}`);
+        if (d.web) sig.push(`Web: ${d.web}`);
+        if (d.certs) sig.push(d.certs);
+        blocks.push('--\n' + sig.join('\n'));
+      }
+
+      if (s.footer && c.footerText) {
+        blocks.push(r(c.footerText));
+      }
+
+      if (s.legalFooter && t.audience !== 'internal') {
+        const legal = [];
+        legal.push(`${d.company} | GF: ${d.legalCeo} | ${d.legalCourt}, ${d.legalRegNr} | USt-IdNr: ${d.legalVatId}`);
+        if (d.legalImprintUrl) legal.push(`Impressum: ${d.legalImprintUrl}`);
+        if (d.legalPrivacyUrl) legal.push(`Datenschutz: ${d.legalPrivacyUrl}`);
+        blocks.push(legal.join('\n'));
+      }
+    }
+
+    return blocks
+      .map(b => b == null ? '' : String(b).trim())
+      .filter(Boolean)
+      .join('\n\n');
+  }
+
   // ── Render Preview ──
   function renderPreview() {
     const template = getActiveTemplate();
@@ -1824,6 +1907,14 @@
       const html = generateEmailHtml(template, state.design, false);
       copyToClipboard(html, 'HTML-Code');
     });
+    const copyTextHandler = () => {
+      const template = getActiveTemplate();
+      if (!template) return;
+      const text = generateEmailText(template, state.design, false);
+      copyToClipboard(text, 'Plain-Text');
+    };
+    $('#btn-copy-text').addEventListener('click', copyTextHandler);
+    $('#btn-copy-text-2').addEventListener('click', copyTextHandler);
     $('#btn-copy-subject').addEventListener('click', () => {
       const template = getActiveTemplate();
       if (!template) return;

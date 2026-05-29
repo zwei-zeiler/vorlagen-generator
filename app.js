@@ -1,5 +1,5 @@
 /* ============================================
-   erwins enkel — PSA Email Vorlagen Generator
+   erwins enkel — PSA Templates
    ============================================ */
 
 (function () {
@@ -8,7 +8,7 @@
   // ── Sponsor / Support Links (easy to change) ──
   const SPONSOR_COFFEE_URL = 'https://buymeacoffee.com/erwins.enkel';
   const SPONSOR_GITHUB_URL = 'https://github.com/sponsors/kai-osthoff';
-  const GITHUB_REPO_URL = 'https://github.com/zwei-zeiler/vorlagen-generator';
+  const GITHUB_REPO_URL = 'https://github.com/erwins-enkel/psa-templates';
 
   // ── Mobile Warning ──
   const mobileWarning = document.getElementById('mobile-warning');
@@ -1494,7 +1494,7 @@
   }
 
   // ── LocalStorage ──
-  const STORAGE_KEY = 'vorlagen-generator';
+  const STORAGE_KEY = 'psa-templates';
 
   function saveToLocalStorage() {
     try {

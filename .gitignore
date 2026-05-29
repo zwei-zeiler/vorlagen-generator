@@ -6,3 +6,11 @@ Thumbs.db
 .shaping/
 .squad/
 node_modules/
+
+# Env — never commit secrets (api/share.js reads Upstash creds)
+.env
+.env.*
+!.env.example
+
+# Claude Code workspace
+.claude/

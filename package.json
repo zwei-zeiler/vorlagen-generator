@@ -3,6 +3,6 @@
   "name": "psa-templates",
   "version": "0.1.0",
   "dependencies": {
-    "@upstash/redis": "^1.34.3"
+    "@upstash/redis": "^1.38.0"
   }
 }

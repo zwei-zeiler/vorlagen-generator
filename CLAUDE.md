@@ -47,3 +47,12 @@ Kein Dev-Server-Script. Statisch servieren, z.B.:
 
 - Conventional Commits mit Scope (`feat(text):`, `fix(ui):`, …) — siehe globale CLAUDE.md.
 - Atomare Commits, ein Commit pro logischer Änderung.
+- Branch → PR → **Squash-Merge** auf `main`. Details in `CONTRIBUTING.md`.
+- **release-please** schneidet Versionen/CHANGELOG automatisch aus den Commits
+  (Config: `release-please-config.json`, Manifest: `.release-please-manifest.json`).
+  Version lebt in `package.json` (`release-type: node`). Nicht manuell taggen.
+- **dependabot** (`.github/dependabot.yml`) hält npm- + GitHub-Actions-Deps wöchentlich aktuell.
+
+> Bewusste Abgrenzung zum `sveltekit-template`-Standard: kein Build, kein
+> Prettier/ESLint/Husky/Vitest. Nur architektur-neutrale Prozess-Guidelines
+> wurden übernommen.

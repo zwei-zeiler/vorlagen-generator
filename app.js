@@ -407,6 +407,13 @@
       name: 'Feedback an Mitarbeiter (intern)',
       audience: 'internal',
       subject: '[Feedback] Ticket [Ticket: Ticket Number]: [Ticket: Title]',
+      // Die globalen Beispiele zeigen die Arbeitsnotiz des Technikers. Hier
+      // trägt dieselbe Variable das Feedback an ihn — sonst liest sich die
+      // Vorschau genau falsch herum.
+      previewExamples: {
+        '[Ticket: Note Title]': 'Feedback zu deiner Ticket-Bearbeitung',
+        '[Ticket: Note Description]': 'Vielen Dank für deine Arbeit an diesem Ticket. Eine Sache hätte ich noch: Bitte füge künftig immer den IT-Glue-Link mit ein, wenn du etwas dokumentierst — und bei diesem Ticket gerne noch nachträglich. So hat ein Kollege, der in dein Ticket schaut, direkt die passende Dokumentation zur Hand. Und der Kunde sieht, dass zum Wert, den er bekommt, auch die Doku gehört.'
+      },
       sections: {
         previewText: true,
         header: true,
@@ -506,9 +513,13 @@
     return map;
   }
 
-  function replaceVarsWithExamples(text) {
+  // overrides: vorlagenspezifische Beispielwerte für die Vorschau. Nötig, weil
+  // dieselbe Variable je nach Vorlage etwas anderes trägt — [Ticket: Note
+  // Description] ist mal die Arbeitsnotiz, mal das Feedback an den Bearbeiter.
+  function replaceVarsWithExamples(text, overrides) {
     const map = buildVarMap();
     return text.replace(/\[([^\]]+)\]/g, (match) => {
+      if (overrides && overrides[match] !== undefined) return overrides[match];
       return map[match] !== undefined ? map[match] : match;
     });
   }
@@ -528,7 +539,7 @@
     const t = template;
     const s = t.sections;
     const c = t.config;
-    const r = useExampleData ? replaceVarsWithExamples : (v) => v;
+    const r = useExampleData ? (v) => replaceVarsWithExamples(v, template.previewExamples) : (v) => v;
     const font = d.font;
     let html = '';
 
@@ -703,7 +714,7 @@
   function generateSignatureHtml(template, design, useExampleData, style) {
     const d = design;
     const s = template.sections;
-    const r = useExampleData ? replaceVarsWithExamples : (v) => v;
+    const r = useExampleData ? (v) => replaceVarsWithExamples(v, template.previewExamples) : (v) => v;
     const font = d.font;
     let html = '';
 
@@ -812,7 +823,7 @@
     const t = template;
     const s = t.sections;
     const c = t.config;
-    const r = useExampleData ? replaceVarsWithExamples : (v) => v;
+    const r = useExampleData ? (v) => replaceVarsWithExamples(v, template.previewExamples) : (v) => v;
     const font = d.font;
     const headerColor = c.headerColorOverride || d.primaryColor;
 
@@ -1045,7 +1056,7 @@
     const t = template;
     const s = t.sections;
     const c = t.config;
-    const r = useExampleData ? replaceVarsWithExamples : (v) => v;
+    const r = useExampleData ? (v) => replaceVarsWithExamples(v, template.previewExamples) : (v) => v;
 
     const blocks = [];
 
@@ -1585,6 +1596,9 @@
         const def = defaultById.get(t.id);
         if (def) {
           t.audience = def.audience;
+          // Vorschau-Beispiele sind nicht nutzer-editierbar: immer aus den
+          // Defaults ziehen, damit gespeicherte Stände sie nachträglich bekommen.
+          t.previewExamples = def.previewExamples;
         } else if (!t.audience) {
           t.audience = 'customer';
         }

@@ -62,6 +62,11 @@
     { id: 'internal-minimal', name: 'Internal Minimal' }
   ];
 
+  // ── Icon Badge ──
+  // Unicode statt SVG: eingebettetes <svg> rendert nur Apple Mail,
+  // Outlook (Word-Engine) und Gmail zeigen nichts.
+  const DEFAULT_BADGE_GLYPH = '💡';
+
   // ── Notification Type Defaults ──
   const NOTIFICATION_TYPE_DEFAULTS = {
     queue: {
@@ -396,6 +401,38 @@
         customIntro: NOTIFICATION_TYPE_DEFAULTS.queue.intro,
         headerColorOverride: ''
       }
+    },
+    {
+      id: 'ticket-feedback-internal',
+      name: 'Feedback an Mitarbeiter (intern)',
+      audience: 'internal',
+      subject: '[Feedback] Ticket [Ticket: Ticket Number]: [Ticket: Title]',
+      sections: {
+        previewText: true,
+        header: true,
+        ticketInfo: true,
+        iconBadge: true,
+        messageBody: true,
+        ctaButton: false,
+        bookingButton: false,
+        kundenportal: false,
+        signature: true,
+        footer: true,
+        legalFooter: false
+      },
+      config: {
+        // Kein fester Prosatext: Überschrift und Einleitung bleiben leer,
+        // der Inhalt kommt vollständig aus der Autotask-Formularvorlage.
+        previewTextVar: '[Ticket: Note Title]',
+        messageBodyVar: '[Ticket: Note Description]',
+        badgeGlyph: DEFAULT_BADGE_GLYPH,
+        ctaText: '',
+        ctaLink: '',
+        footerText: 'Interne Mitteilung — [Miscellaneous: Your Company Name] | Ticket [Ticket: Ticket Number]',
+        customHeading: '',
+        customIntro: '',
+        headerColorOverride: '#4a4a4a'
+      }
     }
   ];
 
@@ -412,6 +449,7 @@
     { key: 'previewText', label: 'Preview Text', tooltip: 'Der Vorschautext wird in E-Mail-Clients (Outlook, Gmail, Apple Mail) in der Inbox neben dem Betreff angezeigt, bevor die E-Mail geöffnet wird. Er ist im geöffneten Mail unsichtbar.' },
     { key: 'header', label: 'Header Bar' },
     { key: 'ticketInfo', label: 'Ticket Info Bar' },
+    { key: 'iconBadge', label: 'Icon-Badge' },
     { key: 'messageBody', label: 'Message Body' },
     { key: 'ctaButton', label: 'CTA Button' },
     { key: 'bookingButton', label: 'Terminbuchung' },
@@ -534,6 +572,24 @@
         html += `          </td>\n`;
         html += `        </tr>\n\n`;
       }
+    }
+
+    // Icon Badge
+    // Tabelle statt div und line-height als Zellhöhe, damit die Word-Engine
+    // das Badge zentriert. border-radius ignoriert Outlook — dort ein Quadrat.
+    if (s.iconBadge) {
+      const glyph = escapeHtml(c.badgeGlyph || DEFAULT_BADGE_GLYPH);
+      const emojiFont = `'Segoe UI Emoji','Apple Color Emoji','Noto Color Emoji',sans-serif`;
+      html += `        <!-- ICON BADGE -->\n`;
+      html += `        <tr>\n`;
+      html += `          <td style="padding:28px 30px 0 30px;" align="center">\n`;
+      html += `            <table cellpadding="0" cellspacing="0" border="0">\n`;
+      html += `              <tr>\n`;
+      html += `                <td width="56" height="56" align="center" valign="middle" style="width:56px;height:56px;background-color:#f4f4f4;border:1px solid #e8e8e8;border-radius:28px;font-size:28px;line-height:56px;mso-line-height-rule:exactly;font-family:${emojiFont};">${glyph}</td>\n`;
+      html += `              </tr>\n`;
+      html += `            </table>\n`;
+      html += `          </td>\n`;
+      html += `        </tr>\n\n`;
     }
 
     // Message Body
@@ -1014,6 +1070,10 @@
         );
       }
 
+      if (s.iconBadge) {
+        blocks.push(c.badgeGlyph || DEFAULT_BADGE_GLYPH);
+      }
+
       if (s.messageBody) {
         if (c.customHeading) blocks.push(r(c.customHeading));
         if (c.customIntro) blocks.push(r(c.customIntro));
@@ -1331,6 +1391,7 @@
         { key: 'ctaLink', label: 'CTA Button Link', type: 'text', placeholder: '[Ticket: Ticket Number (with link)]' },
         { key: 'footerText', label: 'Footer Text', type: 'text', placeholder: 'Fußzeilentext...' },
       ] : []),
+      { key: 'badgeGlyph', label: 'Badge-Zeichen', type: 'text', placeholder: `Leer = ${DEFAULT_BADGE_GLYPH}` },
       { key: 'headerColorOverride', label: 'Header-Farbe (Override)', type: 'text', placeholder: 'Leer = Design-Hauptfarbe, z.B. #4a4a4a' }
     ];
 

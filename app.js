@@ -401,6 +401,38 @@
         customIntro: NOTIFICATION_TYPE_DEFAULTS.queue.intro,
         headerColorOverride: ''
       }
+    },
+    {
+      id: 'ticket-feedback-internal',
+      name: 'Feedback an Mitarbeiter (intern)',
+      audience: 'internal',
+      subject: '[Feedback] Ticket [Ticket: Ticket Number]: [Ticket: Title]',
+      sections: {
+        previewText: true,
+        header: true,
+        ticketInfo: true,
+        iconBadge: true,
+        messageBody: true,
+        ctaButton: false,
+        bookingButton: false,
+        kundenportal: false,
+        signature: true,
+        footer: true,
+        legalFooter: false
+      },
+      config: {
+        // Kein fester Prosatext: Überschrift und Einleitung bleiben leer,
+        // der Inhalt kommt vollständig aus der Autotask-Formularvorlage.
+        previewTextVar: '[Ticket: Note Title]',
+        messageBodyVar: '[Ticket: Note Description]',
+        badgeGlyph: DEFAULT_BADGE_GLYPH,
+        ctaText: '',
+        ctaLink: '',
+        footerText: 'Interne Mitteilung — [Miscellaneous: Your Company Name] | Ticket [Ticket: Ticket Number]',
+        customHeading: '',
+        customIntro: '',
+        headerColorOverride: '#4a4a4a'
+      }
     }
   ];
 

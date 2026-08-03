@@ -24,6 +24,13 @@ Sichtbarer Produktname: **erwins enkel — PSA Templates**.
 > Geschäftsführung oder Registerdaten, hier nachziehen. HRB und USt-ID stehen
 > bewusst als `[bitte ergänzen]` — genau so wie auf der Firmenseite.
 
+> **Die Projektkarte auf `https://www.erwins-enkel.dev` liegt in einem anderen Repo:**
+> `erwins-enkel/enkels-web` → `components/landing/projects.tsx` (Array `projects`,
+> Eintrag `name: "PSA Templates"`). Sie darf kein „Open Source" behaupten, solange
+> dieses Repo privat ist und keine `LICENSE` hat — ohne Lizenz ist der Code auch bei
+> öffentlicher Sichtbarkeit „alle Rechte vorbehalten". Ändert sich Lizenz oder
+> Sichtbarkeit, dort nachziehen.
+
 ## Deploy
 
 - **Auto-Deploy** via Vercel GitHub-Integration: jeder Push auf `main` → Production.

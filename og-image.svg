@@ -1,0 +1,55 @@
+<!--
+  Vorschaubild für Social-Media-Karten (Open Graph / Twitter), 1200×630.
+
+  Diese Datei ist die bearbeitbare Quelle. Nach jeder Änderung neu rendern:
+
+      rsvg-convert -w 1200 -h 630 og-image.svg -o og-image.png
+
+  Ausgeliefert wird ausschließlich das committete og-image.png — Scraper laden
+  kein SVG. Die Schrift ist bewusst generisch (sans-serif) statt
+  "Arial,Helvetica,sans-serif" wie in favicon.svg: auf dieser Maschine ist
+  weder Arial noch Helvetica installiert, gerendert wird ohnehin mit dem
+  fontconfig-Ersatz. Eine generische Angabe macht das sichtbar, statt eine
+  Schrift zu versprechen, die nicht zum Einsatz kommt.
+
+  Keine Zahlen im Bild (Vorlagen-/Stil-Anzahl veraltet sonst), kein Emoji
+  (bräuchte einen Emoji-Font beim Rendern), keine Rasterdaten, keine externen
+  Verweise. logo-default.svg ist der Platzhalter für das Kundenlogo in den
+  generierten Vorlagen und gehört hier nicht hinein.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+
+  <!-- Fläche: Produkt-Primärfarbe, identisch zu favicon.svg und DEFAULT_DESIGN.primaryColor -->
+  <rect width="1200" height="630" fill="#2c3e50"/>
+
+  <!-- Akzentkante links, Farbwert von "ui-accent" aus styles.css -->
+  <rect x="0" y="0" width="12" height="630" fill="#c0392b"/>
+
+  <g font-family="sans-serif">
+
+    <!-- Marke: kursiv und in normaler Strichstärke, wie .brand-prefix in styles.css -->
+    <text x="72" y="150" font-size="40" font-style="italic" font-weight="400"
+          fill="#ffffff" opacity="0.72">erwins enkel</text>
+
+    <!-- Produktname -->
+    <text x="72" y="285" font-size="104" font-weight="700" fill="#ffffff"
+          letter-spacing="-1.5">PSA Templates</text>
+
+    <!-- Akzent-Trennlinie -->
+    <rect x="72" y="330" width="132" height="6" fill="#c0392b"/>
+
+    <!-- Nutzenzeile, gekürzt aus meta name="description" -->
+    <text x="72" y="416" font-size="44" font-weight="400" fill="#ffffff" opacity="0.92">
+      Professionelle E-Mail-Vorlagen für Autotask
+    </text>
+    <text x="72" y="476" font-size="44" font-weight="400" fill="#ffffff" opacity="0.92">
+      im Browser gebaut — ohne Backend, ohne Tracking
+    </text>
+
+    <!-- Fußzeile -->
+    <text x="72" y="562" font-size="30" font-weight="500" fill="#ffffff" opacity="0.55">
+      psa-templates.erwins-enkel.dev
+    </text>
+
+  </g>
+</svg>

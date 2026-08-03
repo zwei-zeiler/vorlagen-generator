@@ -9,6 +9,7 @@
   const SPONSOR_COFFEE_URL = 'https://buymeacoffee.com/erwins.enkel';
   const SPONSOR_GITHUB_URL = 'https://github.com/sponsors/kai-osthoff';
   const GITHUB_REPO_URL = 'https://github.com/erwins-enkel/psa-templates';
+  const COMPANY_URL = 'https://www.erwins-enkel.dev';
 
   // ── Mobile Warning ──
   const mobileWarning = document.getElementById('mobile-warning');
@@ -2456,7 +2457,7 @@
     $('#sponsor-github').href = SPONSOR_GITHUB_URL;
 
     // ── Footer links ──
-    $('#footer-brand-link').href = SPONSOR_COFFEE_URL;
+    $('#footer-brand-link').href = COMPANY_URL;
     $('#footer-repo-link').href = GITHUB_REPO_URL;
 
     // ── Share link detection ──

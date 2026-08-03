@@ -3,11 +3,9 @@
   "meta.ogLocale": "en_US",
   "meta.title": "erwins enkel — PSA Templates",
   "meta.description": "Browser-based generator for professional email templates in PSA systems such as Autotask. No backend, no tracking, all data stays in your browser.",
-
   "mobile.title": "Desktop recommended",
   "mobile.text": "The template generator is built for desktop use. On mobile devices, editing and code export are limited.",
   "mobile.dismiss": "Continue anyway",
-
   "topbar.exportJson": "Export JSON",
   "topbar.exportJson.title": "Export configuration as JSON",
   "topbar.importJson": "Import JSON",
@@ -19,13 +17,12 @@
   "topbar.support": "❤️ Support",
   "topbar.support.title": "Support this project via GitHub Sponsors",
   "topbar.lang.title": "Switch interface language",
-
   "share.title": "Share link",
   "share.creating": "Creating link…",
   "share.copy": "Copy",
   "share.error": "Link could not be created.",
+  "share.hint": "The link contains the complete configuration and does not expire.",
   "share.retry": "Try again",
-
   "sidebar.style": "Style",
   "sidebar.template": "Template",
   "sidebar.subject": "Subject",
@@ -36,11 +33,9 @@
   "sidebar.portal": "Customer portal",
   "sidebar.autotask": "Autotask",
   "sidebar.legal": "Legal details",
-
   "subject.placeholder": "Subject with [variables]…",
   "btn.insertVar": "+Var",
   "btn.insertVar.title": "Insert variable",
-
   "field.primaryColor": "Primary colour",
   "field.textColor": "Text colour",
   "field.accentColor": "Accent colour (subtle)",
@@ -73,10 +68,8 @@
   "field.legalVat": "VAT ID",
   "field.legalImprintUrl": "Imprint URL",
   "field.legalPrivacyUrl": "Privacy policy URL",
-
   "hint.autotaskUrlBefore": "Pre-filled from the zone. ",
   "hint.autotaskUrlAfter": " stands for the internal ticket ID; a URL you edited yourself survives a zone change.",
-
   "preview.desktop": "Desktop",
   "preview.mobile": "Mobile",
   "btn.variables": "Variables",
@@ -88,25 +81,21 @@
   "btn.copyText.title": "Copy the plain-text version for the Autotask text-only field",
   "btn.copySubject": "Copy subject",
   "code.heading": "HTML code (with PSA variables)",
-
   "picker.heading": "Insert variable",
   "picker.search": "Search…",
   "picker.common": "Frequently used",
   "picker.all": "All variables (Autotask catalogue, {lang})",
   "picker.empty": "No variable found.",
-
   "footer.projectOf": "a project by",
   "footer.imprint": "Imprint",
   "footer.privacy": "Privacy",
   "footer.feedback": "Feedback",
-
   "modal.shareTitle": "Apply configuration?",
   "modal.shareText": "Do you want to apply the configuration from this share link? Your current configuration will be overwritten.",
   "modal.cancel": "Cancel",
   "modal.accept": "Apply",
   "modal.resetTitle": "Really reset?",
   "modal.resetText": "All settings will be restored to their defaults. This action cannot be undone.",
-
   "section.previewText": "Preview text",
   "section.previewText.tooltip": "The preview text appears in email clients (Outlook, Gmail, Apple Mail) next to the subject in the inbox, before the message is opened. It is invisible once the message is open.",
   "section.header": "Header bar",
@@ -119,15 +108,12 @@
   "section.signature": "Signature",
   "section.footer": "Footer",
   "section.legalFooter": "Legal footer",
-
   "tabs.customer": "To customer",
   "tabs.internal": "Internal",
-
   "notify.label": "Notification type",
   "notify.queue": "New ticket in queue",
   "notify.assigned": "Ticket assigned",
   "notify.sla": "SLA warning",
-
   "tmpl.customHeading": "Heading",
   "tmpl.customHeading.placeholder": "e.g. Your ticket is being worked on",
   "tmpl.customIntro": "Introduction",
@@ -145,9 +131,7 @@
   "tmpl.badgeGlyph.placeholder": "Empty = {glyph}",
   "tmpl.headerColorOverride": "Header colour (override)",
   "tmpl.headerColorOverride.placeholder": "Empty = design primary colour, e.g. #4a4a4a",
-
   "badge.needsAttention": "Needs attention",
-
   "zoneHint": "Variable language: {lang} — picker and output use the names of this language version.",
   "zone.ww18": "Germany / Europe",
   "zone.prde": "Pre-release (German)",
@@ -171,13 +155,11 @@
   "zone.ww17": "Limited Release (UK)",
   "zone.ww12": "Spain",
   "zone.pres": "Pre-release (Español)",
-
   "copy.html": "HTML code",
   "copy.text": "Plain text",
   "copy.subject": "Subject",
   "copy.variable": "Variable",
   "copy.link": "Link",
-
   "toast.copied": "{label} copied!",
   "toast.exported": "Configuration exported",
   "toast.imported": "Configuration imported",
@@ -189,6 +171,5 @@
   "toast.reset": "Settings reset",
   "toast.retokenized": "{count} variables switched to {lang}",
   "toast.retokenizedUnknown": "{count} variables switched to {lang} — {unknown} unknown left unchanged",
-
   "export.filename": "email-templates-{date}"
 }

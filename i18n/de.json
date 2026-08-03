@@ -3,11 +3,9 @@
   "meta.ogLocale": "de_DE",
   "meta.title": "erwins enkel — PSA Templates",
   "meta.description": "Browser-basierter Generator für professionelle E-Mail-Vorlagen in PSA-Systemen wie Autotask. Kein Backend, kein Tracking, alle Daten bleiben im Browser.",
-
   "mobile.title": "Desktop empfohlen",
   "mobile.text": "Der Template Generator ist für die Nutzung am Desktop optimiert. Auf mobilen Geräten ist die Bearbeitung und der Code-Export eingeschränkt.",
   "mobile.dismiss": "Trotzdem fortfahren",
-
   "topbar.exportJson": "Export JSON",
   "topbar.exportJson.title": "Konfiguration als JSON exportieren",
   "topbar.importJson": "Import JSON",
@@ -19,13 +17,12 @@
   "topbar.support": "❤️ Support",
   "topbar.support.title": "Dieses Projekt über GitHub Sponsors unterstützen",
   "topbar.lang.title": "Sprache der Oberfläche wechseln",
-
   "share.title": "Link teilen",
   "share.creating": "Link wird erstellt…",
   "share.copy": "Kopieren",
   "share.error": "Link konnte nicht erstellt werden.",
+  "share.hint": "Der Link enthält die komplette Konfiguration und läuft nicht ab.",
   "share.retry": "Erneut versuchen",
-
   "sidebar.style": "Style",
   "sidebar.template": "Template",
   "sidebar.subject": "Betreff",
@@ -36,11 +33,9 @@
   "sidebar.portal": "Kundenportal",
   "sidebar.autotask": "Autotask",
   "sidebar.legal": "Rechtliche Angaben",
-
   "subject.placeholder": "Betreff mit [Variablen]…",
   "btn.insertVar": "+Var",
   "btn.insertVar.title": "Variable einfügen",
-
   "field.primaryColor": "Primärfarbe",
   "field.textColor": "Textfarbe",
   "field.accentColor": "Akzentfarbe (dezent)",
@@ -73,10 +68,8 @@
   "field.legalVat": "USt-IdNr",
   "field.legalImprintUrl": "Impressum-URL",
   "field.legalPrivacyUrl": "Datenschutz-URL",
-
   "hint.autotaskUrlBefore": "Wird aus der Zone vorbelegt. ",
   "hint.autotaskUrlAfter": " steht für die interne Ticket-ID; eine selbst angepasste URL bleibt beim Zonenwechsel erhalten.",
-
   "preview.desktop": "Desktop",
   "preview.mobile": "Mobile",
   "btn.variables": "Variablen",
@@ -88,25 +81,21 @@
   "btn.copyText.title": "Plain-Text-Version für Autotask Nur-Text-Feld kopieren",
   "btn.copySubject": "Betreff kopieren",
   "code.heading": "HTML-Code (mit PSA-Variablen)",
-
   "picker.heading": "Variable einfügen",
   "picker.search": "Suchen…",
   "picker.common": "Häufig genutzt",
   "picker.all": "Alle Variablen (Autotask-Katalog, {lang})",
   "picker.empty": "Keine Variable gefunden.",
-
   "footer.projectOf": "ein Projekt der",
   "footer.imprint": "Impressum",
   "footer.privacy": "Datenschutz",
   "footer.feedback": "Feedback",
-
   "modal.shareTitle": "Konfiguration übernehmen?",
   "modal.shareText": "Möchten Sie die Konfiguration aus diesem Share-Link übernehmen? Ihre aktuelle Konfiguration wird dabei überschrieben.",
   "modal.cancel": "Abbrechen",
   "modal.accept": "Übernehmen",
   "modal.resetTitle": "Wirklich zurücksetzen?",
   "modal.resetText": "Alle Einstellungen werden auf die Standardwerte zurückgesetzt. Diese Aktion kann nicht rückgängig gemacht werden.",
-
   "section.previewText": "Preview Text",
   "section.previewText.tooltip": "Der Vorschautext wird in E-Mail-Clients (Outlook, Gmail, Apple Mail) in der Inbox neben dem Betreff angezeigt, bevor die E-Mail geöffnet wird. Er ist im geöffneten Mail unsichtbar.",
   "section.header": "Header Bar",
@@ -119,15 +108,12 @@
   "section.signature": "Signatur",
   "section.footer": "Footer",
   "section.legalFooter": "Legal-Footer",
-
   "tabs.customer": "An Kunde",
   "tabs.internal": "Intern",
-
   "notify.label": "Benachrichtigungstyp",
   "notify.queue": "Neues Ticket in Queue",
   "notify.assigned": "Ticket zugewiesen",
   "notify.sla": "SLA-Warnung",
-
   "tmpl.customHeading": "Überschrift",
   "tmpl.customHeading.placeholder": "z.B. Ihr Ticket wird bearbeitet",
   "tmpl.customIntro": "Einleitungstext",
@@ -145,9 +131,7 @@
   "tmpl.badgeGlyph.placeholder": "Leer = {glyph}",
   "tmpl.headerColorOverride": "Header-Farbe (Override)",
   "tmpl.headerColorOverride.placeholder": "Leer = Design-Hauptfarbe, z.B. #4a4a4a",
-
   "badge.needsAttention": "Bitte anpassen",
-
   "zoneHint": "Variablensprache: {lang} — Picker und Ausgabe nutzen die Namen dieser Sprachversion.",
   "zone.ww18": "Deutschland / Europa",
   "zone.prde": "Pre-Release (Deutsch)",
@@ -171,13 +155,11 @@
   "zone.ww17": "Limited Release (UK)",
   "zone.ww12": "Spanien",
   "zone.pres": "Pre-Release (Español)",
-
   "copy.html": "HTML-Code",
   "copy.text": "Plain-Text",
   "copy.subject": "Betreff",
   "copy.variable": "Variable",
   "copy.link": "Link",
-
   "toast.copied": "{label} kopiert!",
   "toast.exported": "Konfiguration exportiert",
   "toast.imported": "Konfiguration importiert",
@@ -189,6 +171,5 @@
   "toast.reset": "Einstellungen zurückgesetzt",
   "toast.retokenized": "{count} Variablen auf {lang} umgestellt",
   "toast.retokenizedUnknown": "{count} Variablen auf {lang} umgestellt — {unknown} unbekannte unverändert",
-
   "export.filename": "email-vorlagen-{date}"
 }

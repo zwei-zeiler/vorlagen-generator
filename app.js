@@ -2262,8 +2262,7 @@
       stateSuccess.style.display = '';
       $('#share-url-input').value =
         window.location.origin + '/' + SHARE_FRAGMENT_PREFIX + encoded;
-      $('#share-hint').textContent =
-        'Der Link enthält die komplette Konfiguration und läuft nicht ab.';
+      $('#share-hint').textContent = t('share.hint');
 
     } catch (err) {
       stateLoading.style.display = 'none';

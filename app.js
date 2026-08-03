@@ -19,8 +19,70 @@
     });
   }
 
-  // ── PSA Variables (loaded from psa/<provider>.json) ──
-  let psaVars = null;
+  // ── Autotask-Zonen ──
+  // Autotask übersetzt die Namen der Vorlagen-Variablen je Sprachversion, und
+  // welche Sprache eine Instanz spricht, hängt an ihrer Zone: ww18 = Deutsch,
+  // ww12 = Español, alle übrigen = Englisch. Eine Vorlage mit englischen Tokens
+  // löst in einer deutschen Instanz nicht auf — die Variable steht dann im
+  // Klartext in der Mail beim Kunden.
+  // Quelle: psa.datto.com/help/DeveloperHelp/Content/APIs/General/API_Zones.htm
+  const AUTOTASK_ZONES = [
+    { id: 'ww18', lang: 'de', label: 'ww18 — Deutschland / Europa' },
+    { id: 'prde', lang: 'de', label: 'prde — Pre-Release (Deutsch)' },
+    { id: 'ww3', lang: 'en', label: 'ww3 — America East' },
+    { id: 'ww14', lang: 'en', label: 'ww14 — America East 2' },
+    { id: 'ww22', lang: 'en', label: 'ww22 — America East 3' },
+    { id: 'ww5', lang: 'en', label: 'ww5 — America West' },
+    { id: 'ww15', lang: 'en', label: 'ww15 — America West 2' },
+    { id: 'ww24', lang: 'en', label: 'ww24 — America West 3' },
+    { id: 'ww25', lang: 'en', label: 'ww25 — America West 4' },
+    { id: 'ww4', lang: 'en', label: 'ww4 — UK' },
+    { id: 'ww16', lang: 'en', label: 'ww16 — UK 2' },
+    { id: 'ww28', lang: 'en', label: 'ww28 — UK 3' },
+    { id: 'ww6', lang: 'en', label: 'ww6 — Australien / Neuseeland' },
+    { id: 'ww26', lang: 'en', label: 'ww26 — Australien 2' },
+    { id: 'ww29', lang: 'en', label: 'ww29 — Australien 3' },
+    { id: 'ww19', lang: 'en', label: 'ww19 — EU (Englisch, Europa/Asien)' },
+    { id: 'ww1', lang: 'en', label: 'ww1 — Limited Release' },
+    { id: 'ww2', lang: 'en', label: 'ww2 — Pre-Release' },
+    { id: 'ww11', lang: 'en', label: 'ww11 — Pre-Release (UK)' },
+    { id: 'ww17', lang: 'en', label: 'ww17 — Limited Release (UK)' },
+    { id: 'ww12', lang: 'es', label: 'ww12 — Spanien / Europa' },
+    { id: 'pres', lang: 'es', label: 'pres — Pre-Release (Español)' }
+  ];
+
+  const ZONE_LANG_LABELS = { de: 'Deutsch', en: 'English', es: 'Español' };
+
+  function zoneById(id) {
+    return AUTOTASK_ZONES.find(z => z.id === id) || AUTOTASK_ZONES[0];
+  }
+
+  function zoneUrlFor(zone) {
+    return 'https://' + zone.id + '.autotask.net/Mvc/ServiceDesk/TicketDetail.mvc?ticketId={id}';
+  }
+
+  // Nur eine URL, die exakt aus einer Zone erzeugt wurde, darf beim Zonenwechsel
+  // überschrieben werden — eine handgebaute bleibt dem Nutzer erhalten.
+  function isGeneratedZoneUrl(url) {
+    const trimmed = (url || '').trim();
+    return AUTOTASK_ZONES.some(z => zoneUrlFor(z) === trimmed);
+  }
+
+  // ── PSA-Variablen ──
+  // curated.json trägt die ~50 gebräuchlichen Variablen mit ihren Namen in allen
+  // drei Sprachen und ist damit zugleich die Übersetzungstabelle. Die vollen
+  // Kataloge (1.458 Variablen je Sprache) werden erst bei Bedarf nachgeladen.
+  let curatedVars = null;
+  const catalogs = Object.create(null);
+
+  // Autotask-Variablen haben immer die Form [Satz: Feld]. Der Doppelpunkt grenzt
+  // sie von Betreff-Präfixen wie [Queue] oder [Intern] ab, die keine Variablen
+  // sind und beim Umschalten nicht angefasst werden dürfen.
+  const VAR_TOKEN_RE = /\[([^\]]+)\]/g;
+
+  function isVarToken(inner) {
+    return inner.includes(': ');
+  }
 
   // ── Confirm Modal cancel hook ──
   let _cancelModal = function () {};
@@ -50,7 +112,10 @@
     bookingActive: false,
     portalUrl: '',
     portalText: 'Kundenportal öffnen',
-    autotaskUrl: '',
+    autotaskZone: 'ww18',
+    // Passend zur Default-Zone vorbelegt. Gespeicherte Stände überschreiben das,
+    // eine leer gelassene URL bleibt also leer.
+    autotaskUrl: zoneUrlFor(AUTOTASK_ZONES[0]),
     autotaskLinkText: 'In Autotask öffnen'
   };
 
@@ -72,23 +137,23 @@
     queue: {
       subjectPrefix: '[Queue]',
       previewText: 'Neues Ticket in der Queue.',
-      intro: 'Ein neues Ticket ist in der Queue eingegangen und wartet auf Zuweisung.\n\nTitel: [Ticket: Title]\nPriorität: [Ticket: Priority]\nKunde: [Organization: Organization Name]'
+      intro: 'Ein neues Ticket ist in der Queue eingegangen und wartet auf Zuweisung.\n\nTitel: [Ticket: Titel]\nPriorität: [Ticket: Priorität]\nKunde: [Firma: Name]'
     },
     assigned: {
       subjectPrefix: '[Assigned]',
       previewText: 'Ticket wurde dir zugewiesen.',
-      intro: 'Hallo [Resource: First Name],\n\ndir wurde ein Ticket zugewiesen.\n\nTitel: [Ticket: Title]\nPriorität: [Ticket: Priority]\nKunde: [Organization: Organization Name]'
+      intro: 'Hallo [Mitarbeiter: Vorname],\n\ndir wurde ein Ticket zugewiesen.\n\nTitel: [Ticket: Titel]\nPriorität: [Ticket: Priorität]\nKunde: [Firma: Name]'
     },
     sla: {
       subjectPrefix: '[SLA]',
       previewText: 'SLA-Warnung: Ticket nähert sich Fälligkeit.',
-      intro: 'Achtung: Das folgende Ticket nähert sich der SLA-Fälligkeit.\n\nTitel: [Ticket: Title]\nFälligkeit: [Ticket: Due Date]\nPriorität: [Ticket: Priority]'
+      intro: 'Achtung: Das folgende Ticket nähert sich der SLA-Fälligkeit.\n\nTitel: [Ticket: Titel]\nFälligkeit: [Ticket: Fälligkeitsdatum]\nPriorität: [Ticket: Priorität]'
     }
   };
 
   function buildNotificationSubject(type) {
     const prefix = NOTIFICATION_TYPE_DEFAULTS[type]?.subjectPrefix || '[Queue]';
-    return `${prefix} [Ticket: Ticket Number]: [Ticket: Title]`;
+    return `${prefix} [Ticket: Nummer]: [Ticket: Titel]`;
   }
 
   // ── Default Templates ──
@@ -97,7 +162,7 @@
       id: 'ticket-note',
       name: 'Ticket-Note an Kunde',
       audience: 'customer',
-      subject: '[Ticket: Note Title] / [Ticket: Ticket Number]',
+      subject: '[Ticket: Notiztitel] / [Ticket: Nummer]',
       sections: {
         previewText: true,
         header: true,
@@ -111,11 +176,11 @@
         legalFooter: true
       },
       config: {
-        previewTextVar: '[Ticket: Note Description]',
-        messageBodyVar: '[Ticket: Note Description]',
+        previewTextVar: '[Ticket: Beschreibung der Notiz]',
+        messageBodyVar: '[Ticket: Beschreibung der Notiz]',
         ctaText: 'Ticket im Portal ansehen',
-        ctaLink: '[Ticket: Ticket Number (with link)]',
-        footerText: 'Diese Nachricht bezieht sich auf Ticket [Ticket: Ticket Number]. Bitte antworten Sie direkt auf diese E-Mail oder nutzen Sie das Kundenportal.',
+        ctaLink: '[Ticket: Nummer (mit Link)]',
+        footerText: 'Diese Nachricht bezieht sich auf Ticket [Ticket: Nummer]. Bitte antworten Sie direkt auf diese E-Mail oder nutzen Sie das Kundenportal.',
         customHeading: '',
         customIntro: '',
         headerColorOverride: ''
@@ -125,7 +190,7 @@
       id: 'ticket-accepted',
       name: 'Ticket angenommen',
       audience: 'customer',
-      subject: 'Ihr Ticket [Ticket: Ticket Number] wird bearbeitet',
+      subject: 'Ihr Ticket [Ticket: Nummer] wird bearbeitet',
       sections: {
         previewText: true,
         header: true,
@@ -142,10 +207,10 @@
         previewTextVar: 'Ihr Ticket wurde angenommen und wird bearbeitet.',
         messageBodyVar: '',
         ctaText: 'Ticket im Portal ansehen',
-        ctaLink: '[Ticket: Ticket Number (with link)]',
-        footerText: 'Diese Nachricht bezieht sich auf Ticket [Ticket: Ticket Number]. Bitte antworten Sie direkt auf diese E-Mail oder nutzen Sie das Kundenportal.',
+        ctaLink: '[Ticket: Nummer (mit Link)]',
+        footerText: 'Diese Nachricht bezieht sich auf Ticket [Ticket: Nummer]. Bitte antworten Sie direkt auf diese E-Mail oder nutzen Sie das Kundenportal.',
         customHeading: 'Ihr Ticket wird bearbeitet',
-        customIntro: 'Guten Tag [Contact: First Name] [Contact: Last Name],\n\nIhr Ticket wurde von unserem Team angenommen und wird nun bearbeitet.\n\nUnser Techniker [Miscellaneous: Initiating Resource Name] kümmert sich um Ihr Anliegen. Wir melden uns bei Ihnen, sobald wir weitere Informationen haben.',
+        customIntro: 'Guten Tag [Kontakt: Vorname] [Kontakt: Nachname],\n\nIhr Ticket wurde von unserem Team angenommen und wird nun bearbeitet.\n\nUnser Techniker [Diverses: Initiator - Name] kümmert sich um Ihr Anliegen. Wir melden uns bei Ihnen, sobald wir weitere Informationen haben.',
         headerColorOverride: ''
       }
     },
@@ -153,7 +218,7 @@
       id: 'ticket-confirmation',
       name: 'Eingangsbestätigung',
       audience: 'customer',
-      subject: 'Eingangsbestätigung: [Ticket: Title] / [Ticket: Ticket Number]',
+      subject: 'Eingangsbestätigung: [Ticket: Titel] / [Ticket: Nummer]',
       sections: {
         previewText: true,
         header: true,
@@ -170,10 +235,10 @@
         previewTextVar: 'Wir haben Ihre Anfrage erhalten und ein Ticket erstellt.',
         messageBodyVar: '',
         ctaText: 'Ticket im Portal ansehen',
-        ctaLink: '[Ticket: Ticket Number (with link)]',
-        footerText: 'Diese Nachricht bezieht sich auf Ticket [Ticket: Ticket Number]. Bitte antworten Sie direkt auf diese E-Mail oder nutzen Sie das Kundenportal.',
+        ctaLink: '[Ticket: Nummer (mit Link)]',
+        footerText: 'Diese Nachricht bezieht sich auf Ticket [Ticket: Nummer]. Bitte antworten Sie direkt auf diese E-Mail oder nutzen Sie das Kundenportal.',
         customHeading: 'Wir haben Ihre Anfrage erhalten',
-        customIntro: 'Guten Tag [Contact: First Name] [Contact: Last Name],\n\nvielen Dank für Ihre Nachricht. Wir haben Ihre Anfrage erhalten und unter der Ticketnummer [Ticket: Ticket Number] erfasst.\n\nUnser Team wird sich in Kürze mit Ihnen in Verbindung setzen.',
+        customIntro: 'Guten Tag [Kontakt: Vorname] [Kontakt: Nachname],\n\nvielen Dank für Ihre Nachricht. Wir haben Ihre Anfrage erhalten und unter der Ticketnummer [Ticket: Nummer] erfasst.\n\nUnser Team wird sich in Kürze mit Ihnen in Verbindung setzen.',
         headerColorOverride: ''
       }
     },
@@ -181,7 +246,7 @@
       id: 'ticket-closed',
       name: 'Ticket geschlossen',
       audience: 'customer',
-      subject: 'Ihr Ticket [Ticket: Ticket Number] wurde gelöst',
+      subject: 'Ihr Ticket [Ticket: Nummer] wurde gelöst',
       sections: {
         previewText: true,
         header: true,
@@ -198,10 +263,10 @@
         previewTextVar: 'Ihr Ticket wurde erfolgreich gelöst.',
         messageBodyVar: '',
         ctaText: 'Feedback geben',
-        ctaLink: '[Ticket: Ticket Number (with link)]',
-        footerText: 'Diese Nachricht bezieht sich auf Ticket [Ticket: Ticket Number]. Bitte antworten Sie direkt auf diese E-Mail oder nutzen Sie das Kundenportal.',
+        ctaLink: '[Ticket: Nummer (mit Link)]',
+        footerText: 'Diese Nachricht bezieht sich auf Ticket [Ticket: Nummer]. Bitte antworten Sie direkt auf diese E-Mail oder nutzen Sie das Kundenportal.',
         customHeading: 'Ihr Ticket wurde gelöst',
-        customIntro: 'Guten Tag [Contact: First Name] [Contact: Last Name],\n\nIhr Ticket [Ticket: Ticket Number] wurde bearbeitet und als gelöst markiert.\n\nZusammenfassung: [Ticket: Title]\n\nLösung:\n[Ticket: Note Description]\n\nSollte das Problem erneut auftreten oder Sie weitere Fragen haben, können Sie jederzeit auf diese E-Mail antworten oder ein neues Ticket erstellen.\n\nWir freuen uns über Ihr Feedback — nutzen Sie dafür gerne den Button unten.',
+        customIntro: 'Guten Tag [Kontakt: Vorname] [Kontakt: Nachname],\n\nIhr Ticket [Ticket: Nummer] wurde bearbeitet und als gelöst markiert.\n\nZusammenfassung: [Ticket: Titel]\n\nLösung:\n[Ticket: Beschreibung der Notiz]\n\nSollte das Problem erneut auftreten oder Sie weitere Fragen haben, können Sie jederzeit auf diese E-Mail antworten oder ein neues Ticket erstellen.\n\nWir freuen uns über Ihr Feedback — nutzen Sie dafür gerne den Button unten.',
         headerColorOverride: ''
       }
     },
@@ -209,7 +274,7 @@
       id: 'ticket-escalated',
       name: 'Ticket eskaliert',
       audience: 'customer',
-      subject: 'Ihr Ticket [Ticket: Ticket Number] wurde eskaliert',
+      subject: 'Ihr Ticket [Ticket: Nummer] wurde eskaliert',
       sections: {
         previewText: true,
         header: true,
@@ -224,12 +289,12 @@
       },
       config: {
         previewTextVar: 'Ihr Ticket wurde an einen Spezialisten übergeben.',
-        messageBodyVar: '[Ticket: Note Description]',
+        messageBodyVar: '[Ticket: Beschreibung der Notiz]',
         ctaText: 'Ticket im Portal ansehen',
-        ctaLink: '[Ticket: Ticket Number (with link)]',
-        footerText: 'Diese Nachricht bezieht sich auf Ticket [Ticket: Ticket Number]. Bitte antworten Sie direkt auf diese E-Mail oder nutzen Sie das Kundenportal.',
+        ctaLink: '[Ticket: Nummer (mit Link)]',
+        footerText: 'Diese Nachricht bezieht sich auf Ticket [Ticket: Nummer]. Bitte antworten Sie direkt auf diese E-Mail oder nutzen Sie das Kundenportal.',
         customHeading: 'Ihr Ticket wurde an einen Spezialisten übergeben',
-        customIntro: 'Guten Tag [Contact: First Name] [Contact: Last Name],\n\num Ihr Anliegen bestmöglich zu lösen, haben wir Ihr Ticket an einen spezialisierten Techniker übergeben.\n\nGrund der Eskalation:',
+        customIntro: 'Guten Tag [Kontakt: Vorname] [Kontakt: Nachname],\n\num Ihr Anliegen bestmöglich zu lösen, haben wir Ihr Ticket an einen spezialisierten Techniker übergeben.\n\nGrund der Eskalation:',
         headerColorOverride: ''
       }
     },
@@ -237,7 +302,7 @@
       id: 'ticket-feedback-request',
       name: 'Rückfrage an Kunde',
       audience: 'customer',
-      subject: 'Rückfrage zu Ihrem Ticket [Ticket: Ticket Number]',
+      subject: 'Rückfrage zu Ihrem Ticket [Ticket: Nummer]',
       sections: {
         previewText: true,
         header: true,
@@ -252,12 +317,12 @@
       },
       config: {
         previewTextVar: 'Wir benötigen Ihre Rückmeldung zu Ihrem Ticket.',
-        messageBodyVar: '[Ticket: Note Description]',
+        messageBodyVar: '[Ticket: Beschreibung der Notiz]',
         ctaText: 'Jetzt antworten',
-        ctaLink: '[Ticket: Ticket Number (with link)]',
-        footerText: 'Bitte beachten Sie: Ihr Ticket [Ticket: Ticket Number] wartet auf Ihre Rückmeldung. Ohne Ihre Antwort können wir die Bearbeitung nicht fortsetzen.',
+        ctaLink: '[Ticket: Nummer (mit Link)]',
+        footerText: 'Bitte beachten Sie: Ihr Ticket [Ticket: Nummer] wartet auf Ihre Rückmeldung. Ohne Ihre Antwort können wir die Bearbeitung nicht fortsetzen.',
         customHeading: 'Wir benötigen Ihre Rückmeldung',
-        customIntro: 'Guten Tag [Contact: First Name] [Contact: Last Name],\n\nzur weiteren Bearbeitung Ihres Tickets benötigen wir eine Rückmeldung von Ihnen.\n\nUnsere Frage:',
+        customIntro: 'Guten Tag [Kontakt: Vorname] [Kontakt: Nachname],\n\nzur weiteren Bearbeitung Ihres Tickets benötigen wir eine Rückmeldung von Ihnen.\n\nUnsere Frage:',
         headerColorOverride: ''
       }
     },
@@ -265,7 +330,7 @@
       id: 'sla-warning',
       name: 'SLA-Warnung',
       audience: 'customer',
-      subject: 'Update zu Ihrem Ticket [Ticket: Ticket Number]',
+      subject: 'Update zu Ihrem Ticket [Ticket: Nummer]',
       sections: {
         previewText: true,
         header: true,
@@ -282,10 +347,10 @@
         previewTextVar: 'Wir arbeiten mit Hochdruck an Ihrem Ticket.',
         messageBodyVar: '',
         ctaText: 'Ticket im Portal ansehen',
-        ctaLink: '[Ticket: Ticket Number (with link)]',
-        footerText: 'Diese Nachricht bezieht sich auf Ticket [Ticket: Ticket Number]. Bitte antworten Sie direkt auf diese E-Mail oder nutzen Sie das Kundenportal.',
+        ctaLink: '[Ticket: Nummer (mit Link)]',
+        footerText: 'Diese Nachricht bezieht sich auf Ticket [Ticket: Nummer]. Bitte antworten Sie direkt auf diese E-Mail oder nutzen Sie das Kundenportal.',
         customHeading: 'Wir arbeiten mit Hochdruck an Ihrem Ticket',
-        customIntro: 'Guten Tag [Contact: First Name] [Contact: Last Name],\n\nwir möchten Sie proaktiv über den Stand Ihres Tickets informieren.\n\nIhr Anliegen „[Ticket: Title]" hat für uns hohe Priorität. Unser Team arbeitet intensiv an einer Lösung und wir haben Ihr Ticket entsprechend priorisiert.\n\nFälligkeitsdatum: [Ticket: Due Date]\n\nSie können den aktuellen Status jederzeit im Kundenportal einsehen. Wir melden uns umgehend, sobald wir weitere Informationen haben.',
+        customIntro: 'Guten Tag [Kontakt: Vorname] [Kontakt: Nachname],\n\nwir möchten Sie proaktiv über den Stand Ihres Tickets informieren.\n\nIhr Anliegen „[Ticket: Titel]" hat für uns hohe Priorität. Unser Team arbeitet intensiv an einer Lösung und wir haben Ihr Ticket entsprechend priorisiert.\n\nFälligkeitsdatum: [Ticket: Fälligkeitsdatum]\n\nSie können den aktuellen Status jederzeit im Kundenportal einsehen. Wir melden uns umgehend, sobald wir weitere Informationen haben.',
         headerColorOverride: ''
       }
     },
@@ -293,7 +358,7 @@
       id: 'ticket-handover',
       name: 'Ticket-Übergabe (intern)',
       audience: 'internal',
-      subject: '[Intern] Ticket-Übergabe: [Ticket: Title] / [Ticket: Ticket Number]',
+      subject: '[Intern] Ticket-Übergabe: [Ticket: Titel] / [Ticket: Nummer]',
       sections: {
         previewText: true,
         header: true,
@@ -307,13 +372,13 @@
         legalFooter: false
       },
       config: {
-        previewTextVar: 'Ticket-Übergabe: [Ticket: Title]',
-        messageBodyVar: '[Ticket: Note Description]',
+        previewTextVar: 'Ticket-Übergabe: [Ticket: Titel]',
+        messageBodyVar: '[Ticket: Beschreibung der Notiz]',
         ctaText: '',
         ctaLink: '',
-        footerText: 'Interne Mitteilung — [Miscellaneous: Your Company Name] | Ticket [Ticket: Ticket Number]',
+        footerText: 'Interne Mitteilung — [Diverses: Ihr Firmenname] | Ticket [Ticket: Nummer]',
         customHeading: 'Ticket-Übergabe',
-        customIntro: 'Hallo [Resource: First Name],\n\nfolgendes Ticket wird an dich übergeben.\n\nKunde: [Contact: First Name] [Contact: Last Name] ([Organization: Organization Name])\nErstellt am: [Ticket: Create Date]\n\nBisherige Bearbeitung:',
+        customIntro: 'Hallo [Mitarbeiter: Vorname],\n\nfolgendes Ticket wird an dich übergeben.\n\nKunde: [Kontakt: Vorname] [Kontakt: Nachname] ([Firma: Name])\nErstellt am: [Ticket: Erstellungsdatum]\n\nBisherige Bearbeitung:',
         headerColorOverride: '#4a4a4a'
       }
     },
@@ -321,7 +386,7 @@
       id: 'ticket-survey',
       name: 'Kundenzufriedenheits-Umfrage',
       audience: 'customer',
-      subject: 'Wie war unser Service? Ticket [Ticket: Ticket Number]',
+      subject: 'Wie war unser Service? Ticket [Ticket: Nummer]',
       sections: {
         previewText: true,
         header: true,
@@ -338,10 +403,10 @@
         previewTextVar: 'Wir würden uns über Ihr Feedback freuen.',
         messageBodyVar: '',
         ctaText: 'Bewerten Sie unseren Service',
-        ctaLink: '[Ticket: Ticket Number (with link)]',
-        footerText: 'Diese Nachricht bezieht sich auf das abgeschlossene Ticket [Ticket: Ticket Number]. Vielen Dank für Ihr Vertrauen in [Miscellaneous: Your Company Name].',
+        ctaLink: '[Ticket: Nummer (mit Link)]',
+        footerText: 'Diese Nachricht bezieht sich auf das abgeschlossene Ticket [Ticket: Nummer]. Vielen Dank für Ihr Vertrauen in [Diverses: Ihr Firmenname].',
         customHeading: 'Wie war unser Service?',
-        customIntro: 'Guten Tag [Contact: First Name] [Contact: Last Name],\n\nIhr Ticket [Ticket: Ticket Number] „[Ticket: Title]" wurde kürzlich abgeschlossen.\n\nVielen Dank, dass Sie sich an uns gewandt haben. Ihre Meinung ist uns wichtig — sie hilft uns, unseren Service stetig zu verbessern.\n\nWir würden uns freuen, wenn Sie sich einen kurzen Moment Zeit nehmen, um unseren Service zu bewerten.',
+        customIntro: 'Guten Tag [Kontakt: Vorname] [Kontakt: Nachname],\n\nIhr Ticket [Ticket: Nummer] „[Ticket: Titel]" wurde kürzlich abgeschlossen.\n\nVielen Dank, dass Sie sich an uns gewandt haben. Ihre Meinung ist uns wichtig — sie hilft uns, unseren Service stetig zu verbessern.\n\nWir würden uns freuen, wenn Sie sich einen kurzen Moment Zeit nehmen, um unseren Service zu bewerten.',
         headerColorOverride: ''
       }
     },
@@ -349,7 +414,7 @@
       id: 'ticket-booking',
       name: 'Termin zum Ticket buchen',
       audience: 'customer',
-      subject: 'Terminvereinbarung zu Ihrem Ticket [Ticket: Ticket Number]',
+      subject: 'Terminvereinbarung zu Ihrem Ticket [Ticket: Nummer]',
       sections: {
         previewText: true,
         header: true,
@@ -364,12 +429,12 @@
       },
       config: {
         previewTextVar: 'Wir möchten einen Termin mit Ihnen vereinbaren.',
-        messageBodyVar: '[Ticket: Note Description]',
+        messageBodyVar: '[Ticket: Beschreibung der Notiz]',
         ctaText: 'Ticket im Portal ansehen',
-        ctaLink: '[Ticket: Ticket Number (with link)]',
-        footerText: 'Diese Nachricht bezieht sich auf Ticket [Ticket: Ticket Number]. Bitte antworten Sie direkt auf diese E-Mail oder nutzen Sie das Kundenportal.',
+        ctaLink: '[Ticket: Nummer (mit Link)]',
+        footerText: 'Diese Nachricht bezieht sich auf Ticket [Ticket: Nummer]. Bitte antworten Sie direkt auf diese E-Mail oder nutzen Sie das Kundenportal.',
         customHeading: 'Terminvereinbarung zu Ihrem Ticket',
-        customIntro: 'Guten Tag [Contact: First Name] [Contact: Last Name],\n\nfür die weitere Bearbeitung Ihres Tickets möchten wir einen Termin mit Ihnen vereinbaren.\n\nBitte wählen Sie über den folgenden Link einen für Sie passenden Termin aus — ob Remote-Session oder Vor-Ort-Termin, wir richten uns nach Ihnen.\n\nZusätzliche Hinweise:',
+        customIntro: 'Guten Tag [Kontakt: Vorname] [Kontakt: Nachname],\n\nfür die weitere Bearbeitung Ihres Tickets möchten wir einen Termin mit Ihnen vereinbaren.\n\nBitte wählen Sie über den folgenden Link einen für Sie passenden Termin aus — ob Remote-Session oder Vor-Ort-Termin, wir richten uns nach Ihnen.\n\nZusätzliche Hinweise:',
         headerColorOverride: ''
       }
     },
@@ -397,7 +462,7 @@
         ctaText: '',
         ctaLink: '',
         footerText: '',
-        customHeading: '[Ticket: Ticket Number]',
+        customHeading: '[Ticket: Nummer]',
         customIntro: NOTIFICATION_TYPE_DEFAULTS.queue.intro,
         headerColorOverride: ''
       }
@@ -406,13 +471,13 @@
       id: 'ticket-feedback-internal',
       name: 'Feedback an Mitarbeiter (intern)',
       audience: 'internal',
-      subject: '[Feedback] Ticket [Ticket: Ticket Number]: [Ticket: Title]',
+      subject: '[Feedback] Ticket [Ticket: Nummer]: [Ticket: Titel]',
       // Die globalen Beispiele zeigen die Arbeitsnotiz des Technikers. Hier
       // trägt dieselbe Variable das Feedback an ihn — sonst liest sich die
       // Vorschau genau falsch herum.
       previewExamples: {
-        '[Ticket: Note Title]': 'Feedback zu deiner Ticket-Bearbeitung',
-        '[Ticket: Note Description]': 'Vielen Dank für deine Arbeit an diesem Ticket. Eine Sache hätte ich noch: Bitte füge künftig immer den IT-Glue-Link mit ein, wenn du etwas dokumentierst — und bei diesem Ticket gerne noch nachträglich. So hat ein Kollege, der in dein Ticket schaut, direkt die passende Dokumentation zur Hand. Und der Kunde sieht, dass zum Wert, den er bekommt, auch die Doku gehört.'
+        'ticket.noteTitle': 'Feedback zu deiner Ticket-Bearbeitung',
+        'ticket.noteDescription': 'Vielen Dank für deine Arbeit an diesem Ticket. Eine Sache hätte ich noch: Bitte füge künftig immer den IT-Glue-Link mit ein, wenn du etwas dokumentierst — und bei diesem Ticket gerne noch nachträglich. So hat ein Kollege, der in dein Ticket schaut, direkt die passende Dokumentation zur Hand. Und der Kunde sieht, dass zum Wert, den er bekommt, auch die Doku gehört.'
       },
       sections: {
         previewText: true,
@@ -430,12 +495,12 @@
       config: {
         // Kein fester Prosatext: Überschrift und Einleitung bleiben leer,
         // der Inhalt kommt vollständig aus der Autotask-Formularvorlage.
-        previewTextVar: '[Ticket: Note Title]',
-        messageBodyVar: '[Ticket: Note Description]',
+        previewTextVar: '[Ticket: Notiztitel]',
+        messageBodyVar: '[Ticket: Beschreibung der Notiz]',
         badgeGlyph: DEFAULT_BADGE_GLYPH,
         ctaText: '',
         ctaLink: '',
-        footerText: 'Interne Mitteilung — [Miscellaneous: Your Company Name] | Ticket [Ticket: Ticket Number]',
+        footerText: 'Interne Mitteilung — [Diverses: Ihr Firmenname] | Ticket [Ticket: Nummer]',
         customHeading: '',
         customIntro: '',
         headerColorOverride: '#4a4a4a'
@@ -501,27 +566,123 @@
     return `<img src="${src}" width="${width}" alt="${design.company}" style="${tagStyle || 'display:block;'}" />`;
   }
 
+  // ── Variablen-Auflösung ──
+  function getZone() {
+    return zoneById(state.design.autotaskZone);
+  }
+
+  function varLang() {
+    return getZone().lang;
+  }
+
+  function curatedList() {
+    if (!curatedVars) return [];
+    return curatedVars.categories.reduce((all, cat) => all.concat(cat.variables), []);
+  }
+
+  function tokenIn(key, lang) {
+    const v = curatedList().find(x => x.key === key);
+    // Der Fallback ist bewusst auffällig: ohne curated.json ist die Ausgabe
+    // ohnehin unbrauchbar, dann soll man es sehen statt eine leere Stelle.
+    return v && v.name[lang] ? '[' + v.name[lang] + ']' : '[' + key + ']';
+  }
+
+  function tokenFor(key) {
+    return tokenIn(key, varLang());
+  }
+
+  function exampleFor(key) {
+    const v = curatedList().find(x => x.key === key);
+    return v ? v.example : '';
+  }
+
   // ── Build variable lookup map ──
   function buildVarMap() {
     const map = {};
-    if (!psaVars) return map;
-    for (const cat of psaVars.categories) {
-      for (const v of cat.variables) {
-        map[v.variable] = v.example;
-      }
+    const lang = varLang();
+    for (const v of curatedList()) {
+      if (v.name[lang]) map['[' + v.name[lang] + ']'] = v.example;
     }
     return map;
   }
 
-  // overrides: vorlagenspezifische Beispielwerte für die Vorschau. Nötig, weil
-  // dieselbe Variable je nach Vorlage etwas anderes trägt — [Ticket: Note
-  // Description] ist mal die Arbeitsnotiz, mal das Feedback an den Bearbeiter.
+  async function ensureCatalog(lang) {
+    if (catalogs[lang]) return catalogs[lang];
+    try {
+      const resp = await fetch('/psa/autotask/catalog.' + lang + '.json');
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      catalogs[lang] = await resp.json();
+      return catalogs[lang];
+    } catch (e) {
+      console.error('Could not load PSA catalog:', e);
+      return null;
+    }
+  }
+
+  // overrides: vorlagenspezifische Beispielwerte für die Vorschau, adressiert
+  // über den kuratierten Schlüssel. Nötig, weil dieselbe Variable je nach
+  // Vorlage etwas anderes trägt — die Notizbeschreibung ist mal die Arbeitsnotiz,
+  // mal das Feedback an den Bearbeiter. Der Schlüssel statt des Tokens, damit die
+  // Überschreibung einen Sprachwechsel überlebt.
   function replaceVarsWithExamples(text, overrides) {
     const map = buildVarMap();
-    return text.replace(/\[([^\]]+)\]/g, (match) => {
-      if (overrides && overrides[match] !== undefined) return overrides[match];
-      return map[match] !== undefined ? map[match] : match;
-    });
+    if (overrides) {
+      for (const key of Object.keys(overrides)) {
+        map[tokenFor(key)] = overrides[key];
+      }
+    }
+    return text.replace(VAR_TOKEN_RE, (match) => (
+      map[match] !== undefined ? map[match] : match
+    ));
+  }
+
+  // ── Tokens sprachweise umschreiben ──
+  function buildTranslationMap(fromLang, toLang) {
+    const map = {};
+    for (const v of curatedList()) {
+      const from = v.name[fromLang];
+      const to = v.name[toLang];
+      if (from && to && from !== to) map['[' + from + ']'] = '[' + to + ']';
+    }
+    return map;
+  }
+
+  // Läuft über alle Strings einer Struktur und ersetzt ausschließlich exakte
+  // Treffer aus map — keine Muster, keine Teilstrings. stats zählt mit, was
+  // ersetzt wurde und welche Variablen-Tokens unbekannt geblieben sind.
+  function replaceTokensDeep(node, map, known, stats) {
+    if (typeof node === 'string') {
+      return node.replace(VAR_TOKEN_RE, (match, inner) => {
+        if (map[match] !== undefined) {
+          if (stats) stats.replaced++;
+          return map[match];
+        }
+        if (stats && isVarToken(inner) && known && !known.has(match)) {
+          stats.unknown.add(match);
+        }
+        return match;
+      });
+    }
+    if (Array.isArray(node)) {
+      return node.map(item => replaceTokensDeep(item, map, known, stats));
+    }
+    if (node && typeof node === 'object') {
+      for (const key of Object.keys(node)) {
+        node[key] = replaceTokensDeep(node[key], map, known, stats);
+      }
+      return node;
+    }
+    return node;
+  }
+
+  function retokenizeTemplates(fromLang, toLang) {
+    const map = buildTranslationMap(fromLang, toLang);
+    const known = new Set(
+      curatedList().map(v => v.name[fromLang]).filter(Boolean).map(n => '[' + n + ']')
+    );
+    const stats = { replaced: 0, unknown: new Set() };
+    state.templates = replaceTokensDeep(state.templates, map, known, stats);
+    return { replaced: stats.replaced, unknown: stats.unknown.size };
   }
 
   // ── Extract domain from URL ──
@@ -552,12 +713,12 @@
         html += `            <table width="100%" cellpadding="0" cellspacing="0" border="0">\n`;
         html += `              <tr>\n`;
         html += `                <td style="font-size:16px;color:${d.textColor};font-weight:bold;font-family:${font};">\n`;
-        html += `                  ${r('[Ticket: Title]')}\n`;
+        html += `                  ${r(tokenFor('ticket.title'))}\n`;
         html += `                </td>\n`;
         html += `              </tr>\n`;
         html += `              <tr>\n`;
         html += `                <td style="font-size:12px;color:${d.accentColor};padding-top:4px;font-family:${font};">\n`;
-        html += `                  Ticket ${r('[Ticket: Ticket Number]')} &nbsp;|&nbsp; Status: ${r('[Ticket: Status]')} &nbsp;|&nbsp; Priorit&auml;t: ${r('[Ticket: Priority]')}\n`;
+        html += `                  Ticket ${r(tokenFor('ticket.number'))} &nbsp;|&nbsp; Status: ${r(tokenFor('ticket.status'))} &nbsp;|&nbsp; Priorit&auml;t: ${r(tokenFor('ticket.priority'))}\n`;
         html += `                </td>\n`;
         html += `              </tr>\n`;
         html += `            </table>\n`;
@@ -571,12 +732,12 @@
         html += `            <table width="100%" cellpadding="0" cellspacing="0" border="0">\n`;
         html += `              <tr>\n`;
         html += `                <td style="font-size:16px;color:${d.textColor};font-weight:bold;font-family:${font};">\n`;
-        html += `                  ${r('[Ticket: Title]')}\n`;
+        html += `                  ${r(tokenFor('ticket.title'))}\n`;
         html += `                </td>\n`;
         html += `              </tr>\n`;
         html += `              <tr>\n`;
         html += `                <td style="font-size:12px;color:${d.accentColor};padding-top:4px;font-family:${font};">\n`;
-        html += `                  Ticket ${r('[Ticket: Ticket Number]')} &nbsp;|&nbsp; Status: ${r('[Ticket: Status]')} &nbsp;|&nbsp; Priorit&auml;t: ${r('[Ticket: Priority]')}\n`;
+        html += `                  Ticket ${r(tokenFor('ticket.number'))} &nbsp;|&nbsp; Status: ${r(tokenFor('ticket.status'))} &nbsp;|&nbsp; Priorit&auml;t: ${r(tokenFor('ticket.priority'))}\n`;
         html += `                </td>\n`;
         html += `              </tr>\n`;
         html += `            </table>\n`;
@@ -736,7 +897,7 @@
       html += `            <table cellpadding="0" cellspacing="0" border="0" style="font-family:${font};font-size:13px;color:${d.textColor};line-height:1.5;">\n`;
       html += `              <tr>\n`;
       html += `                <td style="vertical-align:top;">\n`;
-      html += `                  <strong style="font-size:14px;color:${d.textColor};">${r('[Miscellaneous: Initiating Resource Name]')}</strong><br />\n`;
+      html += `                  <strong style="font-size:14px;color:${d.textColor};">${r(tokenFor('misc.initiatingResourceName'))}</strong><br />\n`;
       html += `                  <span style="font-size:13px;color:${d.primaryColor};">${d.company}</span> &middot; <span style="font-size:11px;color:${d.accentColor};font-style:italic;">${d.claim}</span><br />\n`;
       html += `                  <span style="font-size:12px;">${d.address} &middot; ${d.phone}</span><br />\n`;
       html += `                  <span style="font-size:12px;">Web: <a href="${d.web}" style="color:${d.primaryColor};text-decoration:none;">${getDomain(d.web)}</a></span>\n`;
@@ -764,7 +925,7 @@
       html += `                  ${getLogoHtml(d, 120)}\n`;
       html += `                </td>\n`;
       html += `                <td style="padding-left:15px;vertical-align:top;">\n`;
-      html += `                  <strong style="font-size:14px;color:${d.textColor};">${r('[Miscellaneous: Initiating Resource Name]')}</strong><br />\n`;
+      html += `                  <strong style="font-size:14px;color:${d.textColor};">${r(tokenFor('misc.initiatingResourceName'))}</strong><br />\n`;
       html += `                  <strong style="font-size:13px;color:${d.primaryColor};">${d.company}</strong><br />\n`;
       html += `                  <span style="font-size:11px;color:${d.accentColor};font-style:italic;">${d.claim}</span><br />\n`;
       html += `                  <br />\n`;
@@ -995,7 +1156,7 @@
       html += `        <!-- HEADING -->\n`;
       html += `        <tr>\n`;
       html += `          <td style="padding:24px 30px 8px 30px;">\n`;
-      html += `            <h1 style="margin:0;font-size:22px;font-weight:600;color:#1a1a1a;font-family:${font};">${r('[Ticket: Ticket Number]')}</h1>\n`;
+      html += `            <h1 style="margin:0;font-size:22px;font-weight:600;color:#1a1a1a;font-family:${font};">${r(tokenFor('ticket.number'))}</h1>\n`;
       html += `          </td>\n`;
       html += `        </tr>\n\n`;
 
@@ -1023,10 +1184,10 @@
       }
 
       // Single Autotask CTA button
-      const exampleTicketNum = psaVars ? (buildVarMap()['Ticket: Ticket Number'] || 'T20250401.0042') : 'T20250401.0042';
-      const ctaHref = escapeHtml(useExampleData
-        ? (d.autotaskUrl ? d.autotaskUrl.replace('{id}', exampleTicketNum) : '#')
-        : (d.autotaskUrl ? d.autotaskUrl.replace('{id}', '[Ticket: Ticket Number]') : '#'));
+      // {id} landet im URL-Parameter ticketId, und der will die interne
+      // Ticket-ID — nicht die angezeigte Ticketnummer.
+      const ctaTicketId = useExampleData ? exampleFor('ticket.id') : tokenFor('ticket.id');
+      const ctaHref = escapeHtml(d.autotaskUrl ? d.autotaskUrl.replace('{id}', ctaTicketId) : '#');
       const ctaLabel = escapeHtml(d.autotaskLinkText || 'In Autotask \u00f6ffnen');
       html += `        <!-- AUTOTASK CTA -->\n`;
       html += `        <tr>\n`;
@@ -1062,22 +1223,23 @@
 
     if (style === 'internal-minimal') {
       // Heading is always the ticket number for this style
-      blocks.push(r('[Ticket: Ticket Number]'));
+      blocks.push(r(tokenFor('ticket.number')));
       if (s.messageBody) {
         if (c.customIntro) blocks.push(r(c.customIntro));
         if (c.messageBodyVar) blocks.push(r(c.messageBodyVar));
       }
       if (d.autotaskUrl) {
-        const url = useExampleData
-          ? d.autotaskUrl.replace('{id}', 'T20250401.0042')
-          : d.autotaskUrl.replace('{id}', '[Ticket: Ticket Number]');
+        const url = d.autotaskUrl.replace(
+          '{id}',
+          useExampleData ? exampleFor('ticket.id') : tokenFor('ticket.id')
+        );
         blocks.push(`${d.autotaskLinkText || 'In Autotask öffnen'}: ${url}`);
       }
     } else {
       if (s.ticketInfo) {
         blocks.push(
-          `${r('[Ticket: Title]')}\n` +
-          `Ticket ${r('[Ticket: Ticket Number]')} | Status: ${r('[Ticket: Status]')} | Priorität: ${r('[Ticket: Priority]')}`
+          `${r(tokenFor('ticket.title'))}\n` +
+          `Ticket ${r(tokenFor('ticket.number'))} | Status: ${r(tokenFor('ticket.status'))} | Priorität: ${r(tokenFor('ticket.priority'))}`
         );
       }
 
@@ -1105,7 +1267,7 @@
       }
 
       if (s.signature) {
-        const sig = [r('[Miscellaneous: Initiating Resource Name]')];
+        const sig = [r(tokenFor('misc.initiatingResourceName'))];
         const companyLine = d.claim ? `${d.company} · ${d.claim}` : d.company;
         sig.push(companyLine);
         if (d.address) sig.push(d.address);
@@ -1209,8 +1371,65 @@
     $('#ds-booking-active').checked = d.bookingActive;
     $('#ds-portal-url').value = d.portalUrl;
     $('#ds-portal-text').value = d.portalText;
+    $('#ds-autotask-zone').value = getZone().id;
     $('#ds-autotask-url').value = d.autotaskUrl || '';
     $('#ds-autotask-link-text').value = d.autotaskLinkText || '';
+    updateZoneHint();
+  }
+
+  // ── Autotask-Zone ──
+  function renderZoneOptions() {
+    const select = $('#ds-autotask-zone');
+    select.innerHTML = '';
+    for (const lang of Object.keys(ZONE_LANG_LABELS)) {
+      const zones = AUTOTASK_ZONES.filter(z => z.lang === lang);
+      if (!zones.length) continue;
+      const group = document.createElement('optgroup');
+      group.label = ZONE_LANG_LABELS[lang];
+      for (const zone of zones) {
+        const option = document.createElement('option');
+        option.value = zone.id;
+        option.textContent = zone.label;
+        group.appendChild(option);
+      }
+      select.appendChild(group);
+    }
+  }
+
+  function updateZoneHint() {
+    $('#ds-autotask-zone-hint').textContent =
+      `Variablensprache: ${ZONE_LANG_LABELS[varLang()]} — Picker und Ausgabe nutzen die Namen dieser Sprachversion.`;
+  }
+
+  function onZoneChange(nextId) {
+    const previousLang = varLang();
+    const previousUrl = state.design.autotaskUrl;
+    state.design.autotaskZone = zoneById(nextId).id;
+
+    if (!previousUrl || isGeneratedZoneUrl(previousUrl)) {
+      state.design.autotaskUrl = zoneUrlFor(getZone());
+    }
+
+    const nextLang = varLang();
+    let result = null;
+    if (nextLang !== previousLang) {
+      result = retokenizeTemplates(previousLang, nextLang);
+      // Der Katalog der neuen Sprache nur, wenn ueberhaupt schon einer geholt
+      // wurde — sonst holt ihn der Picker beim naechsten Oeffnen.
+      if (Object.keys(catalogs).length) ensureCatalog(nextLang);
+    }
+
+    writeDesignToUI();
+    renderTemplateConfig();
+    renderSubjectField();
+    onStateChange();
+
+    if (result) {
+      const langLabel = ZONE_LANG_LABELS[nextLang];
+      showToast(result.unknown
+        ? `${result.replaced} Variablen auf ${langLabel} umgestellt — ${result.unknown} unbekannte unverändert`
+        : `${result.replaced} Variablen auf ${langLabel} umgestellt`);
+    }
   }
 
   // ── Render Style Tabs ──
@@ -1396,10 +1615,10 @@
       { key: 'customHeading', label: 'Überschrift', type: 'text', placeholder: 'z.B. Ihr Ticket wird bearbeitet' },
       { key: 'customIntro', label: 'Einleitungstext', type: 'textarea', placeholder: 'Begrüßung und Einleitung...' },
       { key: 'previewTextVar', label: 'Preview Text (Mail-Vorschau)', type: 'text', placeholder: '[Variable] oder freier Text' },
-      { key: 'messageBodyVar', label: 'Nachrichtentext (Variable)', type: 'text', placeholder: 'z.B. [Ticket: Note Description]' },
+      { key: 'messageBodyVar', label: 'Nachrichtentext (Variable)', type: 'text', placeholder: `z.B. ${tokenFor('ticket.noteDescription')}` },
       ...(!isInternal ? [
         { key: 'ctaText', label: 'CTA Button Text', type: 'text', placeholder: 'Ticket im Portal ansehen' },
-        { key: 'ctaLink', label: 'CTA Button Link', type: 'text', placeholder: '[Ticket: Ticket Number (with link)]' },
+        { key: 'ctaLink', label: 'CTA Button Link', type: 'text', placeholder: tokenFor('ticket.numberWithLink') },
         { key: 'footerText', label: 'Footer Text', type: 'text', placeholder: 'Fußzeilentext...' },
       ] : []),
       { key: 'badgeGlyph', label: 'Badge-Zeichen', type: 'text', placeholder: `Leer = ${DEFAULT_BADGE_GLYPH}` },
@@ -1484,6 +1703,13 @@
     $('#var-picker-overlay').classList.add('active');
     $('#var-search').value = '';
     $('#var-search').focus();
+    // Der volle Katalog wird erst hier geholt und dann nachgerendert; die
+    // kuratierte Auswahl steht sofort.
+    ensureCatalog(varLang()).then(catalog => {
+      if (catalog && $('#var-picker-overlay').classList.contains('active')) {
+        renderVarPickerBody($('#var-search').value);
+      }
+    });
   }
 
   function closeVarPicker() {
@@ -1491,42 +1717,65 @@
     varPickerCallback = null;
   }
 
+  function varPickerGroupHtml(title, categories) {
+    let html = `<div class="var-section-title">${escapeHtml(title)}</div>`;
+    for (const cat of categories) {
+      html += `<div class="var-category"><div class="var-category-title">${escapeHtml(cat.name)}</div>`;
+      for (const item of cat.items) {
+        html += `<div class="var-item">` +
+          `<span class="var-item-name">${escapeHtml(item.token)}</span>` +
+          `<span class="var-item-desc">${escapeHtml(item.description)}</span></div>`;
+      }
+      html += `</div>`;
+    }
+    return html;
+  }
+
   function renderVarPickerBody(filter) {
     const body = $('#var-picker-body');
-    body.innerHTML = '';
-    if (!psaVars) return;
+    const lf = (filter || '').toLowerCase();
+    const lang = varLang();
+    const matches = (name, desc) =>
+      !lf || name.toLowerCase().includes(lf) || (desc && desc.toLowerCase().includes(lf));
 
-    const lf = filter.toLowerCase();
+    // Namen der kuratierten Variablen, damit sie im Katalogteil nicht doppelt
+    // auftauchen — unabhaengig vom Filter gesammelt.
+    const curatedNames = new Set();
+    const curatedGroups = [];
 
-    for (const cat of psaVars.categories) {
-      const matchingVars = cat.variables.filter(v =>
-        !lf || v.variable.toLowerCase().includes(lf) || v.description.toLowerCase().includes(lf)
-      );
-      if (matchingVars.length === 0) continue;
-
-      const catDiv = document.createElement('div');
-      catDiv.className = 'var-category';
-
-      const title = document.createElement('div');
-      title.className = 'var-category-title';
-      title.textContent = cat.name;
-      catDiv.appendChild(title);
-
-      for (const v of matchingVars) {
-        const item = document.createElement('div');
-        item.className = 'var-item';
-        item.innerHTML = `<span class="var-item-name">${escapeHtml(v.variable)}</span><span class="var-item-desc">${escapeHtml(v.description)}</span>`;
-        item.addEventListener('click', () => {
-          if (varPickerCallback) {
-            varPickerCallback(v.variable);
-          }
-          closeVarPicker();
-        });
-        catDiv.appendChild(item);
+    for (const cat of (curatedVars ? curatedVars.categories : [])) {
+      const items = [];
+      for (const v of cat.variables) {
+        const name = v.name[lang];
+        if (!name) continue;
+        curatedNames.add(name);
+        if (matches(name, v.description)) {
+          items.push({ token: '[' + name + ']', description: v.description });
+        }
       }
-
-      body.appendChild(catDiv);
+      if (items.length) curatedGroups.push({ name: cat.name, items });
     }
+
+    const catalog = catalogs[lang];
+    const catalogGroups = [];
+
+    for (const cat of (catalog ? catalog.categories : [])) {
+      const items = cat.variables
+        .filter(name => !curatedNames.has(name) && matches(name, ''))
+        .map(name => ({ token: '[' + name + ']', description: '' }));
+      if (items.length) catalogGroups.push({ name: cat.name, items });
+    }
+
+    let html = '';
+    if (curatedGroups.length) html += varPickerGroupHtml('Häufig genutzt', curatedGroups);
+    if (catalogGroups.length) {
+      html += varPickerGroupHtml(
+        `Alle Variablen (Autotask-Katalog, ${ZONE_LANG_LABELS[lang]})`,
+        catalogGroups
+      );
+    }
+    if (!html) html = '<div class="var-empty">Keine Variable gefunden.</div>';
+    body.innerHTML = html;
   }
 
   // ── Sidebar Warning Badges ──
@@ -1587,6 +1836,65 @@
     }
   }
 
+  // Tokens aus Ständen von vor der Zonen-Auswahl. Ein Teil davon war englisch,
+  // ein Teil existierte in gar keiner Sprache ([Ticket: Ticket Number],
+  // [Resource: Email], [Organization: Organization Name] …) — beides lässt
+  // Autotask unaufgelöst in der Mail stehen. Einmalig repariert, siehe
+  // VAR_SCHEMA.
+  const LEGACY_TOKENS = {
+    '[Attachment: Attachment File/Folder/URL (with link)]': 'attachment.fileWithLink',
+    '[Attachment: Attachment Name (with link)]': 'attachment.nameWithLink',
+    '[Contact: Email Address]': 'contact.emailAddress',
+    '[Contact: First Name]': 'contact.firstName',
+    '[Contact: Last Name]': 'contact.lastName',
+    '[Contact: Phone]': 'contact.phone',
+    '[Contract: Contract Name]': 'contract.name',
+    '[Contract: Contract Number]': 'contract.id',
+    '[Contract: End Date]': 'contract.endDate',
+    '[Contract: Start Date]': 'contract.startDate',
+    '[Device: Device Name]': 'device.referenceName',
+    '[Device: Device Type]': 'device.deviceType',
+    '[Device: Product Name]': 'device.product',
+    '[Device: Serial Number]': 'device.serialNumber',
+    '[Miscellaneous: Current Date]': 'misc.currentDate',
+    '[Miscellaneous: Initiating Resource Email]': 'misc.initiatingResourceEmail',
+    '[Miscellaneous: Initiating Resource Name]': 'misc.initiatingResourceName',
+    '[Miscellaneous: Initiating Resource Phone]': 'misc.initiatingResourceOfficePhone',
+    '[Miscellaneous: Initiating Resource Title]': 'misc.initiatingResourceTitle',
+    '[Miscellaneous: Primary Logo]': 'misc.primaryLogo',
+    '[Miscellaneous: Your Company Name]': 'misc.yourCompanyName',
+    '[Organization: Address 1]': 'organization.address1',
+    '[Organization: City]': 'organization.city',
+    '[Organization: Organization Name]': 'organization.name',
+    '[Organization: Phone]': 'organization.phone',
+    '[Organization: Postal Code]': 'organization.zipCode',
+    '[Organization: Web]': 'organization.web',
+    '[Resource: Email]': 'resource.emailAddress',
+    '[Resource: First Name]': 'resource.firstName',
+    '[Resource: Last Name]': 'resource.lastName',
+    '[Resource: Phone]': 'resource.officePhone',
+    '[Resource: Title]': 'resource.title',
+    '[Ticket Time Entry: Hours Worked]': 'timeEntry.hoursWorked',
+    '[Ticket Time Entry: Start Date/Time]': 'timeEntry.startDateTime',
+    '[Ticket Time Entry: Summary Notes]': 'timeEntry.summaryNotes',
+    '[Ticket: Create Date]': 'ticket.createDate',
+    '[Ticket: Description]': 'ticket.description',
+    '[Ticket: Due Date]': 'ticket.dueDate',
+    '[Ticket: Note Description]': 'ticket.noteDescription',
+    '[Ticket: Note Title]': 'ticket.noteTitle',
+    '[Ticket: Priority]': 'ticket.priority',
+    '[Ticket: Queue]': 'ticket.queue',
+    '[Ticket: Status]': 'ticket.status',
+    '[Ticket: Ticket Number (with link)]': 'ticket.numberWithLink',
+    '[Ticket: Ticket Number]': 'ticket.number',
+    '[Ticket: Title]': 'ticket.title',
+    '[Your Local Organization: Address]': 'yourCompany.address',
+    '[Your Local Organization: Organization Name]': 'yourCompany.name',
+    '[Your Local Organization: Phone]': 'yourCompany.phone'
+  };
+
+  const VAR_SCHEMA = 2;
+
   // ── State Migration (mutates state in-place, returns same reference) ──
   function migrateState(state) {
     if (state.templates) {
@@ -1614,6 +1922,24 @@
         }
       });
     }
+
+    if (state.design) {
+      // Unbekannte Zone-IDs (alter Export, Tippfehler im Import) auf den Default
+      // normalisieren, damit gespeicherter Stand und UI nicht auseinanderlaufen.
+      state.design.autotaskZone = zoneById(state.design.autotaskZone).id;
+    }
+
+    if (state.varSchema !== VAR_SCHEMA) {
+      const lang = zoneById(state.design && state.design.autotaskZone).lang;
+      const repair = {};
+      for (const legacy of Object.keys(LEGACY_TOKENS)) {
+        const token = tokenIn(LEGACY_TOKENS[legacy], lang);
+        if (token !== legacy) repair[legacy] = token;
+      }
+      if (state.templates) state.templates = replaceTokensDeep(state.templates, repair);
+      state.varSchema = VAR_SCHEMA;
+    }
+
     return state;
   }
 
@@ -1642,6 +1968,7 @@
     const data = {
       version: 1,
       exportDate: new Date().toISOString(),
+      varSchema: state.varSchema,
       design: state.design,
       templates: state.templates,
       activeStyle: state.activeStyle
@@ -1660,6 +1987,10 @@
   function applyConfig(data) {
     if (data.design) state.design = { ...DEFAULT_DESIGN, ...data.design };
     if (data.templates) state.templates = data.templates;
+    // Der Stand der geladenen Konfiguration zählt, nicht der der laufenden
+    // Sitzung — sonst überspringt ein Import in eine bereits migrierte Sitzung
+    // die Token-Reparatur.
+    state.varSchema = data.varSchema;
     migrateState(state);
     state.activeTemplateId = state.templates[0]?.id || 'ticket-note';
     state.activeStyle = data.activeStyle || 'modern-card';
@@ -1705,6 +2036,7 @@
     const payload = {
       version: 1,
       exportDate: new Date().toISOString(),
+      varSchema: state.varSchema,
       design: state.design,
       templates: state.templates,
       activeStyle: state.activeStyle
@@ -1853,13 +2185,19 @@
 
   // ── Initialize ──
   async function init() {
-    // Load autotask variables
+    // Load autotask variables — muss vor loadFromLocalStorage stehen, die
+    // Reparatur alter Stände braucht die Übersetzungstabelle.
     try {
-      const resp = await fetch('/psa/autotask.json');
-      psaVars = await resp.json();
+      const resp = await fetch('/psa/autotask/curated.json');
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      curatedVars = await resp.json();
     } catch (e) {
       console.error('Could not load PSA variables:', e);
+      showToast('Variablen konnten nicht geladen werden — bitte Seite neu laden.');
     }
+
+    // Zonen-Dropdown befüllen, bevor writeDesignToUI die Auswahl setzt
+    renderZoneOptions();
 
     // Load state from localStorage
     loadFromLocalStorage();
@@ -1906,6 +2244,11 @@
         onStateChange();
       });
     }
+
+    // ── Autotask Zone ──
+    $('#ds-autotask-zone').addEventListener('change', function () {
+      onZoneChange(this.value);
+    });
 
     // ── Autotask URL blur validation ──
     $('#ds-autotask-url').addEventListener('blur', function() {
@@ -2008,6 +2351,13 @@
     });
     $('#var-search').addEventListener('input', (e) => {
       renderVarPickerBody(e.target.value);
+    });
+    // Delegiert statt ein Listener je Eintrag — der Katalog bringt ueber 1.400.
+    $('#var-picker-body').addEventListener('click', (e) => {
+      const item = e.target.closest('.var-item');
+      if (!item) return;
+      if (varPickerCallback) varPickerCallback(item.querySelector('.var-item-name').textContent);
+      closeVarPicker();
     });
 
     // ── Export / Import ──

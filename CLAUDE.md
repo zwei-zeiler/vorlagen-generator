@@ -34,7 +34,12 @@ Kein Dev-Server-Script. Statisch servieren, z.B.:
 - `index.html` — UI-Markup (Sidebar-Editor, Preview-/Code-Panel, Toolbars)
 - `app.js` — gesamte Logik: Templates, Design-State, HTML-/Text-Generierung, Share-Links
 - `styles.css` — Styling
-- `psa/autotask.json` — PSA-Variablen-Definitionen (weitere Systeme als eigene JSON ergänzbar)
+- `psa/autotask/curated.json` — ~50 gebräuchliche Variablen mit Namen in `de`/`en`/`es`,
+  deutscher Beschreibung und Beispielwert. Zugleich die Übersetzungstabelle beim Zonenwechsel.
+- `psa/autotask/catalog.{de,en,es}.json` — Vollkatalog (1.458 Variablen je Sprache),
+  generiert, nicht von Hand pflegen. Wird erst beim Öffnen des Variablen-Pickers geladen.
+- `tools/build-psa-catalog.py` — erzeugt die Kataloge aus den offiziellen Autotask-Tabellen;
+  `--check` validiert `curated.json` dagegen (offline)
 - `api/share.js` — Vercel Serverless Function für Share-Links (Upstash Redis)
 - `vercel.json` — Rewrites (`/s/:id` → Share) + CSP/Security-Header
 
@@ -42,6 +47,11 @@ Kein Dev-Server-Script. Statisch servieren, z.B.:
 
 - Share-Feature braucht Upstash Redis Env-Vars (`KV_REST_API_URL`/`_TOKEN` o. `UPSTASH_REDIS_REST_*`) in Vercel.
 - Output kennt **zwei Formen**: HTML-Code (für Autotask HTML-Feld) und Plain-Text (`generateEmailText`, für Autotask „Nur-Text"-Feld). PSA-`[Variablen]` bleiben in beiden erhalten.
+- **Variablennamen sind sprachabhängig.** Autotask übersetzt sie je Sprachversion, und die
+  Sprache hängt an der Zone: `ww18` = Deutsch, `ww12` = Español, alle übrigen Englisch.
+  `[Ticket: Titel]` löst in einer englischen Instanz nicht auf und umgekehrt. Die Zone steht
+  in `design.autotaskZone` (Default `ww18`); Tokens im Code entstehen ausschließlich über
+  `tokenFor('<kuratierter Schlüssel>')`, nie als Literal.
 
 ## Konventionen
 

@@ -1,0 +1,373 @@
+{
+ "schema": 2,
+ "source": "Autotask PSA Template Variables (Variables_{en,de,es}.xlsx)",
+ "note": "Namen je Sprache exakt wie in den offiziellen Autotask-Tabellen — pruefbar mit tools/build-psa-catalog.py --check. Beschreibung und Beispiel sind bewusst immer deutsch: die App-UI und die erzeugten Mails sind deutsch, nur die Variablennamen folgen der Zone.",
+ "categories": [
+  {
+   "key": "ticket",
+   "name": "Ticket",
+   "variables": [
+    {
+     "key": "ticket.number",
+     "name": { "en": "Ticket: Number", "de": "Ticket: Nummer", "es": "Ticket: Número" },
+     "description": "Ticket-Nummer",
+     "example": "T20250401.0042"
+    },
+    {
+     "key": "ticket.numberWithLink",
+     "name": { "en": "Ticket: Number (with link)", "de": "Ticket: Nummer (mit Link)", "es": "Ticket: Número (con vínculo)" },
+     "description": "Ticket-Nummer als Link",
+     "example": "<a href='#'>T20250401.0042</a>"
+    },
+    {
+     "key": "ticket.id",
+     "name": { "en": "Ticket: ID", "de": "Ticket: ID", "es": "Ticket: Id." },
+     "description": "Interne Ticket-ID — für Deeplinks (ticketId), nicht die Ticket-Nummer",
+     "example": "148372"
+    },
+    {
+     "key": "ticket.title",
+     "name": { "en": "Ticket: Title", "de": "Ticket: Titel", "es": "Ticket: Título" },
+     "description": "Ticket-Titel",
+     "example": "Drucker im 2. OG druckt nicht"
+    },
+    {
+     "key": "ticket.description",
+     "name": { "en": "Ticket: Description", "de": "Ticket: Beschreibung", "es": "Ticket: Descripción" },
+     "description": "Ticket-Beschreibung",
+     "example": "Der Drucker HP LaserJet im 2. OG reagiert nicht mehr auf Druckaufträge. Neustart wurde bereits versucht."
+    },
+    {
+     "key": "ticket.status",
+     "name": { "en": "Ticket: Status", "de": "Ticket: Status", "es": "Ticket: Estado" },
+     "description": "Aktueller Status",
+     "example": "In Bearbeitung"
+    },
+    {
+     "key": "ticket.priority",
+     "name": { "en": "Ticket: Priority", "de": "Ticket: Priorität", "es": "Ticket: Prioridad" },
+     "description": "Priorität",
+     "example": "Hoch"
+    },
+    {
+     "key": "ticket.queue",
+     "name": { "en": "Ticket: Queue", "de": "Ticket: Queue", "es": "Ticket: Cola" },
+     "description": "Queue/Warteschlange",
+     "example": "1st Level Support"
+    },
+    {
+     "key": "ticket.dueDate",
+     "name": { "en": "Ticket: Due Date", "de": "Ticket: Fälligkeitsdatum", "es": "Ticket: Fecha de vencimiento" },
+     "description": "Fälligkeitsdatum",
+     "example": "03.04.2025"
+    },
+    {
+     "key": "ticket.createDate",
+     "name": { "en": "Ticket: Create Date", "de": "Ticket: Erstellungsdatum", "es": "Ticket: Fecha de creación" },
+     "description": "Erstelldatum",
+     "example": "01.04.2025"
+    }
+   ]
+  },
+  {
+   "key": "ticketNote",
+   "name": "Ticket-Notiz",
+   "variables": [
+    {
+     "key": "ticket.noteTitle",
+     "name": { "en": "Ticket: Note Title", "de": "Ticket: Notiztitel", "es": "Ticket: Título de la nota" },
+     "description": "Titel der Notiz",
+     "example": "Zwischenstand Druckerproblem"
+    },
+    {
+     "key": "ticket.noteDescription",
+     "name": { "en": "Ticket: Note Description", "de": "Ticket: Beschreibung der Notiz", "es": "Ticket: Descripción de la nota" },
+     "description": "Inhalt der Notiz",
+     "example": "Wir haben den Drucker-Treiber neu installiert und einen Testdruck durchgeführt. Das Problem scheint am Netzwerkkabel zu liegen, welches wir morgen austauschen werden."
+    }
+   ]
+  },
+  {
+   "key": "ticketTimeEntry",
+   "name": "Ticket-Zeiteintrag",
+   "variables": [
+    {
+     "key": "timeEntry.summaryNotes",
+     "name": { "en": "Ticket Time Entry: Summary Notes", "de": "Ticket-Zeiteintrag: Zusammenfassung der ausgeführten Arbeiten", "es": "Entrada de tiempo del ticket: Notas de resumen" },
+     "description": "Zusammenfassung des Zeiteintrags",
+     "example": "Drucker-Treiber aktualisiert und Netzwerkverbindung geprüft."
+    },
+    {
+     "key": "timeEntry.hoursWorked",
+     "name": { "en": "Ticket Time Entry: Hours Worked", "de": "Ticket-Zeiteintrag: Geleistete Arbeitsstunden", "es": "Entrada de tiempo del ticket: Horas trabajadas" },
+     "description": "Geleistete Stunden",
+     "example": "1.5"
+    },
+    {
+     "key": "timeEntry.startDateTime",
+     "name": { "en": "Ticket Time Entry: Start Date/Time", "de": "Ticket-Zeiteintrag: Startdatum/-zeit", "es": "Entrada de tiempo del ticket: Fecha/hora de inicio" },
+     "description": "Startzeit",
+     "example": "01.04.2025 09:30"
+    }
+   ]
+  },
+  {
+   "key": "miscellaneous",
+   "name": "Diverses",
+   "variables": [
+    {
+     "key": "misc.initiatingResourceName",
+     "name": { "en": "Miscellaneous: Initiating Resource Name", "de": "Diverses: Initiator - Name", "es": "Varios: Nombre del recurso que inició" },
+     "description": "Name des Absenders/Auslösers",
+     "example": "Max Mustermann"
+    },
+    {
+     "key": "misc.initiatingResourceTitle",
+     "name": { "en": "Miscellaneous: Initiating Resource Title", "de": "Diverses: Initiator - Titel", "es": "Varios: Cargo del recurso que inició" },
+     "description": "Position des Absenders",
+     "example": "Senior IT-Consultant"
+    },
+    {
+     "key": "misc.initiatingResourceEmail",
+     "name": { "en": "Miscellaneous: Initiating Resource Email", "de": "Diverses: Initiator - E-Mail", "es": "Varios: Correo electrónico del recurso que inició" },
+     "description": "E-Mail des Absenders",
+     "example": "m.mustermann@example.com"
+    },
+    {
+     "key": "misc.initiatingResourceOfficePhone",
+     "name": { "en": "Miscellaneous: Initiating Resource Office Phone", "de": "Diverses: Initiator - dienstliche Telefonnr.", "es": "Varios: Teléfono del trabajo del recurso que inició" },
+     "description": "Telefon des Absenders",
+     "example": "+49 30 123 456 001"
+    },
+    {
+     "key": "misc.yourCompanyName",
+     "name": { "en": "Miscellaneous: Your Company Name", "de": "Diverses: Ihr Firmenname", "es": "Varios: Nombre de su empresa" },
+     "description": "Eigener Firmenname",
+     "example": "Muster GmbH"
+    },
+    {
+     "key": "misc.currentDate",
+     "name": { "en": "Miscellaneous: Current Date", "de": "Diverses: Aktuelles Datum", "es": "Varios: Fecha actual" },
+     "description": "Aktuelles Datum",
+     "example": "01.04.2025"
+    },
+    {
+     "key": "misc.primaryLogo",
+     "name": { "en": "Miscellaneous: Primary Logo (Requires HTML)", "de": "Diverses: Hauptlogo (HTML erforderlich)", "es": "Varios: Logotipo principal (Requiere HTML)" },
+     "description": "Primäres Logo (nur im HTML-Feld)",
+     "example": "https://example.com/logo.png"
+    }
+   ]
+  },
+  {
+   "key": "resource",
+   "name": "Mitarbeiter",
+   "variables": [
+    {
+     "key": "resource.firstName",
+     "name": { "en": "Resource: First Name", "de": "Mitarbeiter: Vorname", "es": "Recurso: Nombre de pila" },
+     "description": "Vorname des zugewiesenen Technikers",
+     "example": "Thomas"
+    },
+    {
+     "key": "resource.lastName",
+     "name": { "en": "Resource: Last Name", "de": "Mitarbeiter: Nachname", "es": "Recurso: Apellido" },
+     "description": "Nachname des zugewiesenen Technikers",
+     "example": "Schmidt"
+    },
+    {
+     "key": "resource.title",
+     "name": { "en": "Resource: Title", "de": "Mitarbeiter: Titel", "es": "Recurso: Título" },
+     "description": "Position des Technikers",
+     "example": "IT-Systemadministrator"
+    },
+    {
+     "key": "resource.emailAddress",
+     "name": { "en": "Resource: Email Address", "de": "Mitarbeiter: E-Mail-Adresse", "es": "Recurso: Dirección de correo electrónico" },
+     "description": "E-Mail des Technikers",
+     "example": "t.schmidt@example.com"
+    },
+    {
+     "key": "resource.officePhone",
+     "name": { "en": "Resource: Office Phone", "de": "Mitarbeiter: Dienstliche Telefonnr.", "es": "Recurso: Teléfono del trabajo" },
+     "description": "Telefon des Technikers",
+     "example": "+49 30 123 456 002"
+    }
+   ]
+  },
+  {
+   "key": "contact",
+   "name": "Kontakt",
+   "variables": [
+    {
+     "key": "contact.firstName",
+     "name": { "en": "Contact: First Name", "de": "Kontakt: Vorname", "es": "Contacto: Nombre de pila" },
+     "description": "Vorname des Kunden-Ansprechpartners",
+     "example": "Anna"
+    },
+    {
+     "key": "contact.lastName",
+     "name": { "en": "Contact: Last Name", "de": "Kontakt: Nachname", "es": "Contacto: Apellido" },
+     "description": "Nachname des Kunden-Ansprechpartners",
+     "example": "Müller"
+    },
+    {
+     "key": "contact.emailAddress",
+     "name": { "en": "Contact: Email Address", "de": "Kontakt: E-Mail-Adresse", "es": "Contacto: Dirección de correo electrónico" },
+     "description": "E-Mail des Ansprechpartners",
+     "example": "a.mueller@kunde.de"
+    },
+    {
+     "key": "contact.phone",
+     "name": { "en": "Contact: Phone", "de": "Kontakt: Telefon", "es": "Contacto: Teléfono" },
+     "description": "Telefon des Ansprechpartners",
+     "example": "+49 30 555 1234"
+    }
+   ]
+  },
+  {
+   "key": "organization",
+   "name": "Firma (Kunde)",
+   "variables": [
+    {
+     "key": "organization.name",
+     "name": { "en": "Organization: Name", "de": "Firma: Name", "es": "Empresa: Nombre" },
+     "description": "Firmenname des Kunden",
+     "example": "Muster GmbH"
+    },
+    {
+     "key": "organization.phone",
+     "name": { "en": "Organization: Phone", "de": "Firma: Telefon", "es": "Empresa: Teléfono" },
+     "description": "Telefon des Kunden",
+     "example": "+49 30 555 0000"
+    },
+    {
+     "key": "organization.web",
+     "name": { "en": "Organization: Web", "de": "Firma: Web", "es": "Empresa: Web" },
+     "description": "Webseite des Kunden",
+     "example": "www.muster-gmbh.de"
+    },
+    {
+     "key": "organization.address1",
+     "name": { "en": "Organization: Address 1", "de": "Firma: Adresse 1", "es": "Empresa: Dirección 1" },
+     "description": "Adresse Zeile 1",
+     "example": "Berliner Str. 42"
+    },
+    {
+     "key": "organization.city",
+     "name": { "en": "Organization: City", "de": "Firma: Ort", "es": "Empresa: Ciudad" },
+     "description": "Stadt",
+     "example": "Berlin"
+    },
+    {
+     "key": "organization.zipCode",
+     "name": { "en": "Organization: Zip Code", "de": "Firma: Postleitzahl", "es": "Empresa: Código postal" },
+     "description": "PLZ",
+     "example": "10115"
+    }
+   ]
+  },
+  {
+   "key": "yourCompany",
+   "name": "Ihre Firma",
+   "variables": [
+    {
+     "key": "yourCompany.name",
+     "name": { "en": "Your Company: Name", "de": "Ihre Firma: Name", "es": "Su empresa: Nombre" },
+     "description": "Eigene Firma",
+     "example": "Muster GmbH"
+    },
+    {
+     "key": "yourCompany.address",
+     "name": { "en": "Your Company: Address", "de": "Ihre Firma: Adresse", "es": "Su empresa: Dirección" },
+     "description": "Eigene Adresse",
+     "example": "Musterstraße 1, 10115 Berlin"
+    },
+    {
+     "key": "yourCompany.phone",
+     "name": { "en": "Your Company: Phone", "de": "Ihre Firma: Telefon", "es": "Su empresa: Teléfono" },
+     "description": "Eigenes Telefon",
+     "example": "+49 30 123 456 789"
+    }
+   ]
+  },
+  {
+   "key": "attachment",
+   "name": "Anhang",
+   "variables": [
+    {
+     "key": "attachment.nameWithLink",
+     "name": { "en": "Attachment: Attachment Name (with link)", "de": "Anhang: Name des Anhangs (mit Link)", "es": "Archivo adjunto: Nombre del archivo adjunto (con vínculo)" },
+     "description": "Anhangsname als Link",
+     "example": "<a href='#'>screenshot.png</a>"
+    },
+    {
+     "key": "attachment.fileWithLink",
+     "name": { "en": "Attachment: Attachment File/Folder/URL (with link)", "de": "Anhang: Datei/Ordner/URL für Anhang (mit Link)", "es": "Archivo adjunto: Archivo/Carpeta/URL adjuntos (con vínculo)" },
+     "description": "Anhang-Pfad als Link",
+     "example": "<a href='#'>Datei öffnen</a>"
+    }
+   ]
+  },
+  {
+   "key": "contract",
+   "name": "Vertrag",
+   "variables": [
+    {
+     "key": "contract.name",
+     "name": { "en": "Contract: Contract Name", "de": "Vertrag: Vertragsname", "es": "Contrato: Nombre del contrato" },
+     "description": "Vertragsname",
+     "example": "Managed Services Vertrag"
+    },
+    {
+     "key": "contract.id",
+     "name": { "en": "Contract: Contract ID", "de": "Vertrag: Vertrags-ID", "es": "Contrato: Id. de contrato" },
+     "description": "Vertrags-ID",
+     "example": "MSP-2025-001"
+    },
+    {
+     "key": "contract.startDate",
+     "name": { "en": "Contract: Start Date", "de": "Vertrag: Startdatum", "es": "Contrato: Fecha de inicio" },
+     "description": "Vertragsbeginn",
+     "example": "01.01.2025"
+    },
+    {
+     "key": "contract.endDate",
+     "name": { "en": "Contract: End Date", "de": "Vertrag: Enddatum", "es": "Contrato: Fecha de finalización" },
+     "description": "Vertragsende",
+     "example": "31.12.2025"
+    }
+   ]
+  },
+  {
+   "key": "device",
+   "name": "Gerät",
+   "variables": [
+    {
+     "key": "device.referenceName",
+     "name": { "en": "Device: Reference Name", "de": "Gerät: Referenzname", "es": "Elemento de configuración: Nombre de referencia" },
+     "description": "Gerätename",
+     "example": "PC-MUSTER-001"
+    },
+    {
+     "key": "device.serialNumber",
+     "name": { "en": "Device: Serial Number", "de": "Gerät: Seriennummer", "es": "Elemento de configuración: Número de serie" },
+     "description": "Seriennummer",
+     "example": "SN-ABC123456"
+    },
+    {
+     "key": "device.product",
+     "name": { "en": "Device: Product", "de": "Gerät: Artikel", "es": "Elemento de configuración: Producto" },
+     "description": "Produktname",
+     "example": "HP LaserJet Pro M404dn"
+    },
+    {
+     "key": "device.deviceType",
+     "name": { "en": "Device: Device Type", "de": "Gerät: Gerätetyp", "es": "Elemento de configuración: Tipo de dispositivo" },
+     "description": "Gerätetyp",
+     "example": "Drucker"
+    }
+   ]
+  }
+ ]
+}

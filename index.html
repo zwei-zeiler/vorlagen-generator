@@ -37,9 +37,9 @@
   <div class="mobile-warning" id="mobile-warning">
     <div class="mobile-warning-content">
       <span class="mobile-warning-icon">🖥️</span>
-      <h2>Desktop empfohlen</h2>
-      <p>Der Template Generator ist für die Nutzung am Desktop optimiert. Auf mobilen Geräten ist die Bearbeitung und der Code-Export eingeschränkt.</p>
-      <button class="btn btn-primary" id="mobile-warning-dismiss">Trotzdem fortfahren</button>
+      <h2 data-i18n="mobile.title">Desktop empfohlen</h2>
+      <p data-i18n="mobile.text">Der Template Generator ist für die Nutzung am Desktop optimiert. Auf mobilen Geräten ist die Bearbeitung und der Code-Export eingeschränkt.</p>
+      <button class="btn btn-primary" id="mobile-warning-dismiss" data-i18n="mobile.dismiss">Trotzdem fortfahren</button>
     </div>
   </div>
 
@@ -47,35 +47,39 @@
   <header class="top-bar">
     <h1><span class="brand-prefix">erwins enkel</span> — PSA Templates</h1>
     <div class="top-bar-actions">
-      <button class="btn" id="btn-export" title="Konfiguration als JSON exportieren">Export JSON</button>
-      <button class="btn" id="btn-import" title="Konfiguration aus JSON importieren">Import JSON</button>
+      <button class="btn" id="btn-export" title="Konfiguration als JSON exportieren" data-i18n="topbar.exportJson" data-i18n-title="topbar.exportJson.title">Export JSON</button>
+      <button class="btn" id="btn-import" title="Konfiguration aus JSON importieren" data-i18n="topbar.importJson" data-i18n-title="topbar.importJson.title">Import JSON</button>
       <input type="file" id="import-file" accept=".json">
-      <button class="btn btn-reset" id="btn-reset" title="Alle Einstellungen zurücksetzen">Zurücksetzen</button>
+      <button class="btn btn-reset" id="btn-reset" title="Alle Einstellungen zurücksetzen" data-i18n="topbar.reset" data-i18n-title="topbar.reset.title">Zurücksetzen</button>
       <div class="share-popover-wrapper" id="share-popover-wrapper">
-        <button class="btn" id="btn-share" title="Konfiguration als Link teilen">Link teilen</button>
+        <button class="btn" id="btn-share" title="Konfiguration als Link teilen" data-i18n="topbar.share" data-i18n-title="topbar.share.title">Link teilen</button>
         <div class="share-popover" id="share-popover">
           <div class="share-popover-header">
-            <span>Link teilen</span>
+            <span data-i18n="share.title">Link teilen</span>
             <button class="share-popover-close" id="share-popover-close">&times;</button>
           </div>
           <div class="share-popover-body">
             <div class="share-state share-state--loading" id="share-state-loading">
               <div class="share-spinner"></div>
-              <span>Link wird erstellt...</span>
+              <span data-i18n="share.creating">Link wird erstellt…</span>
             </div>
             <div class="share-state share-state--success" id="share-state-success" style="display:none;">
               <input type="text" class="share-url-input" id="share-url-input" readonly>
-              <button class="btn btn-sm btn-primary" id="btn-copy-share-url">Kopieren</button>
+              <button class="btn btn-sm btn-primary" id="btn-copy-share-url" data-i18n="share.copy">Kopieren</button>
               <p class="share-hint" id="share-hint"></p>
             </div>
             <div class="share-state share-state--error" id="share-state-error" style="display:none;">
-              <p class="share-error-msg" id="share-error-msg">Link konnte nicht erstellt werden.</p>
-              <button class="btn btn-sm" id="btn-share-retry">Erneut versuchen</button>
+              <p class="share-error-msg" id="share-error-msg" data-i18n="share.error">Link konnte nicht erstellt werden.</p>
+              <button class="btn btn-sm" id="btn-share-retry" data-i18n="share.retry">Erneut versuchen</button>
             </div>
           </div>
         </div>
       </div>
-      <a class="btn btn-sponsor" id="btn-sponsor" href="https://github.com/sponsors/kai-osthoff" title="Dieses Projekt über GitHub Sponsors unterstützen" target="_blank" rel="noopener noreferrer">❤️ Support</a>
+      <div class="lang-switch" id="lang-switch" role="group" title="Sprache der Oberfläche wechseln" data-i18n-title="topbar.lang.title">
+        <button type="button" data-ui-lang="de" lang="de">DE</button>
+        <button type="button" data-ui-lang="en" lang="en">EN</button>
+      </div>
+      <a class="btn btn-sponsor" id="btn-sponsor" href="https://github.com/sponsors/kai-osthoff" title="Dieses Projekt über GitHub Sponsors unterstützen" data-i18n="topbar.support" data-i18n-title="topbar.support.title" target="_blank" rel="noopener noreferrer">❤️ Support</a>
     </div>
   </header>
 
@@ -87,7 +91,7 @@
 
       <!-- 1. Style Selection -->
       <div class="sidebar-section collapsed">
-        <h3 class="sidebar-section-header"><span>Style</span><span class="chevron">▶</span></h3>
+        <h3 class="sidebar-section-header"><span data-i18n="sidebar.style">Style</span><span class="chevron">▶</span></h3>
         <div class="sidebar-section-content">
           <div class="template-tabs" id="style-tabs"></div>
         </div>
@@ -95,7 +99,7 @@
 
       <!-- 2. Template Selection -->
       <div class="sidebar-section collapsed">
-        <h3 class="sidebar-section-header"><span>Template</span><span class="chevron">▶</span></h3>
+        <h3 class="sidebar-section-header"><span data-i18n="sidebar.template">Template</span><span class="chevron">▶</span></h3>
         <div class="sidebar-section-content">
           <div class="template-tabs" id="template-tabs"></div>
         </div>
@@ -103,34 +107,34 @@
 
       <!-- 3. Subject -->
       <div class="sidebar-section collapsed">
-        <h3 class="sidebar-section-header"><span>Betreff</span><span class="chevron">▶</span></h3>
+        <h3 class="sidebar-section-header"><span data-i18n="sidebar.subject">Betreff</span><span class="chevron">▶</span></h3>
         <div class="sidebar-section-content">
           <div class="subject-row">
-            <input type="text" id="template-subject" placeholder="Betreff mit [Variablen]...">
-            <button class="btn btn-sm btn-insert-var" data-target="template-subject" title="Variable einfügen">+Var</button>
+            <input type="text" id="template-subject" placeholder="Betreff mit [Variablen]…" data-i18n-placeholder="subject.placeholder">
+            <button class="btn btn-sm btn-insert-var" data-target="template-subject" title="Variable einfügen" data-i18n="btn.insertVar" data-i18n-title="btn.insertVar.title">+Var</button>
           </div>
         </div>
       </div>
 
       <!-- 4. Section Toggles -->
       <div class="sidebar-section collapsed" id="section-toggles">
-        <h3 class="sidebar-section-header"><span>Sections</span><span class="chevron">▶</span></h3>
+        <h3 class="sidebar-section-header"><span data-i18n="sidebar.sections">Sections</span><span class="chevron">▶</span></h3>
         <div class="sidebar-section-content" id="section-toggles-content"></div>
       </div>
 
       <!-- 5. Template-specific Config -->
       <div class="sidebar-section collapsed" id="template-config">
-        <h3 class="sidebar-section-header"><span>Template-Texte</span><span class="chevron">▶</span></h3>
+        <h3 class="sidebar-section-header"><span data-i18n="sidebar.templateTexts">Template-Texte</span><span class="chevron">▶</span></h3>
         <div class="sidebar-section-content" id="template-config-content"></div>
       </div>
 
       <!-- 6. Design System -->
       <div class="sidebar-section collapsed">
-        <h3 class="sidebar-section-header"><span>Design System</span><span class="chevron">▶</span></h3>
+        <h3 class="sidebar-section-header" data-section="designSystem"><span data-i18n="sidebar.designSystem">Design System</span><span class="chevron">▶</span></h3>
         <div class="sidebar-section-content">
 
           <div class="form-group">
-            <label>Primärfarbe</label>
+            <label data-i18n="field.primaryColor">Primärfarbe</label>
             <div class="color-input-row">
               <input type="color" id="ds-primary-color" value="#2c3e50">
               <input type="text" id="ds-primary-color-text" value="#2c3e50" maxlength="7">
@@ -138,7 +142,7 @@
           </div>
 
           <div class="form-group">
-            <label>Textfarbe</label>
+            <label data-i18n="field.textColor">Textfarbe</label>
             <div class="color-input-row">
               <input type="color" id="ds-text-color" value="#333333">
               <input type="text" id="ds-text-color-text" value="#333333" maxlength="7">
@@ -146,7 +150,7 @@
           </div>
 
           <div class="form-group">
-            <label>Akzentfarbe (dezent)</label>
+            <label data-i18n="field.accentColor">Akzentfarbe (dezent)</label>
             <div class="color-input-row">
               <input type="color" id="ds-accent-color" value="#888888">
               <input type="text" id="ds-accent-color-text" value="#888888" maxlength="7">
@@ -154,7 +158,7 @@
           </div>
 
           <div class="form-group">
-            <label>Logo anzeigen</label>
+            <label data-i18n="field.logoEnabled">Logo anzeigen</label>
             <label class="toggle" style="float:right;">
               <input type="checkbox" id="ds-logo-enabled" checked>
               <span class="toggle-slider"></span>
@@ -163,42 +167,42 @@
           </div>
 
           <div class="form-group">
-            <label>Logo-URL</label>
-            <input type="url" id="ds-logo" value="" placeholder="https://example.com/logo.png (leer = Platzhalter)">
+            <label data-i18n="field.logoUrl">Logo-URL</label>
+            <input type="url" id="ds-logo" value="" placeholder="https://example.com/logo.png (leer = Platzhalter)" data-i18n-placeholder="field.logoUrl.placeholder">
           </div>
 
           <div class="form-group">
-            <label>Firmenname</label>
+            <label data-i18n="field.company">Firmenname</label>
             <input type="text" id="ds-company" value="Muster GmbH">
           </div>
 
           <div class="form-group">
-            <label>Claim / Slogan</label>
+            <label data-i18n="field.claim">Claim / Slogan</label>
             <input type="text" id="ds-claim" value="Ihr IT-Dienstleister">
           </div>
 
           <div class="form-group">
-            <label>Adresse</label>
+            <label data-i18n="field.address">Adresse</label>
             <input type="text" id="ds-address" value="Musterstraße 1, 10115 Berlin">
           </div>
 
           <div class="form-group">
-            <label>Telefon</label>
+            <label data-i18n="field.phone">Telefon</label>
             <input type="tel" id="ds-phone" value="+49 30 123 456 789">
           </div>
 
           <div class="form-group">
-            <label>Web-URL</label>
+            <label data-i18n="field.web">Web-URL</label>
             <input type="url" id="ds-web" value="https://www.example.com">
           </div>
 
           <div class="form-group">
-            <label>Zertifizierungen / Footer-Info</label>
-            <input type="text" id="ds-certs" value="" placeholder="z.B. ISO 9001 zertifiziert">
+            <label data-i18n="field.certs">Zertifizierungen / Footer-Info</label>
+            <input type="text" id="ds-certs" value="" placeholder="z.B. ISO 9001 zertifiziert" data-i18n-placeholder="field.certs.placeholder">
           </div>
 
           <div class="form-group">
-            <label>Font-Familie</label>
+            <label data-i18n="field.fontFamily">Font-Familie</label>
             <select id="ds-font">
               <option value="Arial,Helvetica,sans-serif" selected>Arial</option>
               <option value="Verdana,Geneva,sans-serif">Verdana</option>
@@ -214,11 +218,11 @@
 
       <!-- 7. Terminbuchung -->
       <div class="sidebar-section collapsed">
-        <h3 class="sidebar-section-header"><span>Terminbuchung</span><span class="chevron">▶</span></h3>
+        <h3 class="sidebar-section-header" data-section="booking"><span data-i18n="sidebar.booking">Terminbuchung</span><span class="chevron">▶</span></h3>
         <div class="sidebar-section-content">
 
           <div class="form-group">
-            <label>Buchungslink aktiv</label>
+            <label data-i18n="field.bookingActive">Buchungslink aktiv</label>
             <label class="toggle" style="float:right;">
               <input type="checkbox" id="ds-booking-active">
               <span class="toggle-slider"></span>
@@ -227,12 +231,12 @@
           </div>
 
           <div class="form-group">
-            <label>Buchungslink-URL</label>
-            <input type="url" id="ds-booking-url" placeholder="https://cal.com/ihr-unternehmen/termin">
+            <label data-i18n="field.bookingUrl">Buchungslink-URL</label>
+            <input type="url" id="ds-booking-url" placeholder="https://cal.com/ihr-unternehmen/termin" data-i18n-placeholder="field.bookingUrl.placeholder">
           </div>
 
           <div class="form-group">
-            <label>Buchungslink-Text</label>
+            <label data-i18n="field.bookingText">Buchungslink-Text</label>
             <input type="text" id="ds-booking-text" value="Jetzt Termin buchen">
           </div>
 
@@ -241,16 +245,16 @@
 
       <!-- 8. Kundenportal -->
       <div class="sidebar-section collapsed">
-        <h3 class="sidebar-section-header"><span>Kundenportal</span><span class="chevron">▶</span></h3>
+        <h3 class="sidebar-section-header" data-section="portal"><span data-i18n="sidebar.portal">Kundenportal</span><span class="chevron">▶</span></h3>
         <div class="sidebar-section-content">
 
           <div class="form-group">
-            <label>Portal-URL</label>
-            <input type="url" id="ds-portal-url" placeholder="https://portal.example.com">
+            <label data-i18n="field.portalUrl">Portal-URL</label>
+            <input type="url" id="ds-portal-url" placeholder="https://portal.example.com" data-i18n-placeholder="field.portalUrl.placeholder">
           </div>
 
           <div class="form-group">
-            <label>Link-Text</label>
+            <label data-i18n="field.portalText">Link-Text</label>
             <input type="text" id="ds-portal-text" value="Kundenportal öffnen">
           </div>
 
@@ -259,24 +263,24 @@
 
       <!-- 9. Autotask -->
       <div class="sidebar-section collapsed">
-        <h3 class="sidebar-section-header"><span>Autotask</span><span class="chevron">▶</span></h3>
+        <h3 class="sidebar-section-header" data-section="autotask"><span data-i18n="sidebar.autotask">Autotask</span><span class="chevron">▶</span></h3>
         <div class="sidebar-section-content">
 
           <div class="form-group">
-            <label for="ds-autotask-zone">Zone / Server</label>
+            <label for="ds-autotask-zone" data-i18n="field.zone">Zone / Server</label>
             <select id="ds-autotask-zone"></select>
             <p class="field-hint" id="ds-autotask-zone-hint"></p>
           </div>
 
           <div class="form-group">
-            <label for="ds-autotask-url">Autotask URL</label>
-            <input type="url" id="ds-autotask-url" placeholder="https://ww18.autotask.net/Mvc/ServiceDesk/TicketDetail.mvc?ticketId={id}">
-            <p class="field-hint">Wird aus der Zone vorbelegt. <code>{id}</code> steht für die interne Ticket-ID; eine selbst angepasste URL bleibt beim Zonenwechsel erhalten.</p>
+            <label for="ds-autotask-url" data-i18n="field.autotaskUrl">Autotask URL</label>
+            <input type="url" id="ds-autotask-url" placeholder="https://ww18.autotask.net/Mvc/ServiceDesk/TicketDetail.mvc?ticketId={id}" data-i18n-placeholder="field.autotaskUrl.placeholder">
+            <p class="field-hint"><span data-i18n="hint.autotaskUrlBefore">Wird aus der Zone vorbelegt. </span><code>{id}</code><span data-i18n="hint.autotaskUrlAfter"> steht für die interne Ticket-ID; eine selbst angepasste URL bleibt beim Zonenwechsel erhalten.</span></p>
           </div>
 
           <div class="form-group">
-            <label for="ds-autotask-link-text">Button-Text</label>
-            <input type="text" id="ds-autotask-link-text" placeholder="In Autotask öffnen">
+            <label for="ds-autotask-link-text" data-i18n="field.autotaskLinkText">Button-Text</label>
+            <input type="text" id="ds-autotask-link-text" placeholder="In Autotask öffnen" data-i18n-placeholder="field.autotaskLinkText.placeholder">
           </div>
 
         </div>
@@ -284,36 +288,36 @@
 
       <!-- 10. Rechtliche Angaben -->
       <div class="sidebar-section collapsed">
-        <h3 class="sidebar-section-header"><span>Rechtliche Angaben</span><span class="chevron">▶</span></h3>
+        <h3 class="sidebar-section-header" data-section="legal"><span data-i18n="sidebar.legal">Rechtliche Angaben</span><span class="chevron">▶</span></h3>
         <div class="sidebar-section-content">
 
           <div class="form-group">
-            <label>Geschäftsführer</label>
+            <label data-i18n="field.legalCeo">Geschäftsführer</label>
             <input type="text" id="ds-legal-ceo" value="Max Mustermann">
           </div>
 
           <div class="form-group">
-            <label>Registergericht</label>
+            <label data-i18n="field.legalCourt">Registergericht</label>
             <input type="text" id="ds-legal-court" value="AG Berlin-Charlottenburg">
           </div>
 
           <div class="form-group">
-            <label>Handelsregister-Nr</label>
+            <label data-i18n="field.legalRegNr">Handelsregister-Nr</label>
             <input type="text" id="ds-legal-regnr" value="HRB 12345 B">
           </div>
 
           <div class="form-group">
-            <label>USt-IdNr</label>
+            <label data-i18n="field.legalVat">USt-IdNr</label>
             <input type="text" id="ds-legal-vatid" value="DE123456789">
           </div>
 
           <div class="form-group">
-            <label>Impressum-URL</label>
+            <label data-i18n="field.legalImprintUrl">Impressum-URL</label>
             <input type="url" id="ds-legal-imprint" value="https://www.example.com/impressum/">
           </div>
 
           <div class="form-group">
-            <label>Datenschutz-URL</label>
+            <label data-i18n="field.legalPrivacyUrl">Datenschutz-URL</label>
             <input type="url" id="ds-legal-privacy" value="https://www.example.com/datenschutz/">
           </div>
 
@@ -327,16 +331,16 @@
       <div class="preview-toolbar">
         <div class="preview-toolbar-left">
           <div class="device-toggle">
-            <button class="active" data-device="desktop">Desktop</button>
-            <button data-device="mobile">Mobile</button>
+            <button class="active" data-device="desktop" data-i18n="preview.desktop">Desktop</button>
+            <button data-device="mobile" data-i18n="preview.mobile">Mobile</button>
           </div>
         </div>
         <div class="preview-toolbar-right">
-          <button class="btn btn-sm" id="btn-vars" title="Variablen-Picker öffnen">Variablen</button>
-          <button class="btn btn-sm" id="btn-show-code">Code anzeigen</button>
-          <button class="btn btn-sm btn-primary" id="btn-copy-code">Code kopieren</button>
-          <button class="btn btn-sm" id="btn-copy-text" title="Plain-Text-Version für Autotask Nur-Text-Feld kopieren">Text kopieren</button>
-          <button class="btn btn-sm" id="btn-copy-subject">Betreff kopieren</button>
+          <button class="btn btn-sm" id="btn-vars" title="Variablen-Picker öffnen" data-i18n="btn.variables" data-i18n-title="btn.variables.title">Variablen</button>
+          <button class="btn btn-sm" id="btn-show-code" data-i18n="btn.showCode">Code anzeigen</button>
+          <button class="btn btn-sm btn-primary" id="btn-copy-code" data-i18n="btn.copyCode">Code kopieren</button>
+          <button class="btn btn-sm" id="btn-copy-text" title="Plain-Text-Version für Autotask Nur-Text-Feld kopieren" data-i18n="btn.copyText" data-i18n-title="btn.copyText.title">Text kopieren</button>
+          <button class="btn btn-sm" id="btn-copy-subject" data-i18n="btn.copySubject">Betreff kopieren</button>
         </div>
       </div>
       <div class="preview-container">
@@ -348,12 +352,12 @@
     <div class="code-panel" id="code-panel">
       <div class="preview-toolbar">
         <div class="preview-toolbar-left">
-          <strong style="font-size:13px;">HTML-Code (mit PSA-Variablen)</strong>
+          <strong style="font-size:13px;" data-i18n="code.heading">HTML-Code (mit PSA-Variablen)</strong>
         </div>
         <div class="preview-toolbar-right">
-          <button class="btn btn-sm btn-primary" id="btn-copy-code-2">Code kopieren</button>
-          <button class="btn btn-sm" id="btn-copy-text-2" title="Plain-Text-Version für Autotask Nur-Text-Feld kopieren">Text kopieren</button>
-          <button class="btn btn-sm" id="btn-show-preview">Preview anzeigen</button>
+          <button class="btn btn-sm btn-primary" id="btn-copy-code-2" data-i18n="btn.copyCode">Code kopieren</button>
+          <button class="btn btn-sm" id="btn-copy-text-2" title="Plain-Text-Version für Autotask Nur-Text-Feld kopieren" data-i18n="btn.copyText" data-i18n-title="btn.copyText.title">Text kopieren</button>
+          <button class="btn btn-sm" id="btn-show-preview" data-i18n="btn.showPreview">Preview anzeigen</button>
         </div>
       </div>
       <div class="code-output">
@@ -367,11 +371,11 @@
   <div class="var-picker-overlay" id="var-picker-overlay">
     <div class="var-picker">
       <div class="var-picker-header">
-        <h3>Variable einfügen</h3>
+        <h3 data-i18n="picker.heading">Variable einfügen</h3>
         <button class="var-picker-close" id="var-picker-close">&times;</button>
       </div>
       <div class="var-picker-search">
-        <input type="text" id="var-search" placeholder="Suchen...">
+        <input type="text" id="var-search" placeholder="Suchen..." data-i18n-placeholder="picker.search">
       </div>
       <div class="var-picker-body" id="var-picker-body"></div>
     </div>
@@ -384,22 +388,22 @@
   <footer class="app-footer">
       Made with ☕ by <a href="https://www.erwins-enkel.dev" id="footer-brand-link" target="_blank" rel="noopener noreferrer">erwins enkel</a>
       <br>
-      <span class="footer-subbrand">ein Projekt der <strong>Erwins Enkel GmbH</strong></span>
+      <span class="footer-subbrand"><span data-i18n="footer.projectOf">ein Projekt der</span> <strong>Erwins Enkel GmbH</strong></span>
       ·
-      <a href="/impressum.html">Impressum</a>
+      <a href="/impressum.html" data-i18n="footer.imprint">Impressum</a>
       ·
-      <a href="/datenschutz.html">Datenschutz</a>
+      <a href="/datenschutz.html" data-i18n="footer.privacy">Datenschutz</a>
       ·
-      <a href="mailto:hallo@erwins-enkel.dev?subject=PSA%20Templates%20Feedback" id="footer-contact-link">Feedback</a>
+      <a href="mailto:hallo@erwins-enkel.dev?subject=PSA%20Templates%20Feedback" id="footer-contact-link" data-i18n="footer.feedback">Feedback</a>
   </footer>
 
   <div class="confirm-modal-overlay" id="confirm-modal-overlay">
     <div class="confirm-modal">
-      <h3>Konfiguration übernehmen?</h3>
-      <p>Möchten Sie die Konfiguration aus diesem Share-Link übernehmen? Ihre aktuelle Konfiguration wird dabei ersetzt.</p>
+      <h3 data-i18n="modal.shareTitle">Konfiguration übernehmen?</h3>
+      <p data-i18n="modal.shareText">Möchten Sie die Konfiguration aus diesem Share-Link übernehmen? Ihre aktuelle Konfiguration wird dabei ersetzt.</p>
       <div class="confirm-modal-actions">
-        <button class="btn" id="confirm-modal-cancel">Abbrechen</button>
-        <button class="btn btn-primary" id="confirm-modal-accept">Übernehmen</button>
+        <button class="btn" id="confirm-modal-cancel" data-i18n="modal.cancel">Abbrechen</button>
+        <button class="btn btn-primary" id="confirm-modal-accept" data-i18n="modal.accept">Übernehmen</button>
       </div>
     </div>
   </div>

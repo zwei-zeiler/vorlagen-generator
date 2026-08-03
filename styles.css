@@ -614,6 +614,36 @@ body {
 /* ── Hidden file input ── */
 #import-file { display: none; }
 
+/* ── Sprachumschalter ── */
+.lang-switch {
+  display: inline-flex;
+  border: 1px solid var(--ui-border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.lang-switch button {
+  padding: 6px 10px;
+  border: none;
+  background: var(--ui-surface);
+  color: var(--ui-text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.lang-switch button:hover {
+  background: #f0f0f2;
+  color: var(--ui-text);
+}
+.lang-switch button.active {
+  background: var(--ui-text);
+  color: #fff;
+}
+.lang-switch button + button {
+  border-left: 1px solid var(--ui-border);
+}
+
 /* ── Sponsor Button ── */
 .btn-sponsor {
   background: linear-gradient(135deg, #ff813f 0%, #e6559a 100%) !important;

@@ -130,7 +130,14 @@
   // ── Icon Badge ──
   // Unicode statt SVG: eingebettetes <svg> rendert nur Apple Mail,
   // Outlook (Word-Engine) und Gmail zeigen nichts.
-  const DEFAULT_BADGE_GLYPH = '💡';
+  //
+  // Das Zeichen muss innerhalb der BMP liegen (U+0000–U+FFFF). Auf dem Weg in
+  // die Autotask-Vorlage werden UTF-16-Surrogatpaare zerlegt und jede Hälfte
+  // durch „?" ersetzt — die frühere Glühbirne U+1F4A1 kam beim Empfänger als
+  // „??" an, während Umlaute und der Gedankenstrich U+2014 sauber durchliefen.
+  // ⚡ U+26A1 ist BMP und hat von Haus aus Emoji-Darstellung.
+  const DEFAULT_BADGE_GLYPH = '⚡';
+  const LEGACY_BADGE_GLYPH = '\u{1F4A1}';
 
   // ── Notification Type Defaults ──
   const NOTIFICATION_TYPE_DEFAULTS = {
@@ -1893,7 +1900,10 @@
     '[Your Local Organization: Phone]': 'yourCompany.phone'
   };
 
-  const VAR_SCHEMA = 2;
+  // Versionsstand der gespeicherten Reparaturen:
+  //   2 — Variablen-Tokens auf die Sprache der Zone normalisiert
+  //   3 — Badge-Zeichen von der Glühbirne auf ein BMP-Emoji umgestellt
+  const VAR_SCHEMA = 3;
 
   // ── State Migration (mutates state in-place, returns same reference) ──
   function migrateState(state) {
@@ -1929,7 +1939,9 @@
       state.design.autotaskZone = zoneById(state.design.autotaskZone).id;
     }
 
-    if (state.varSchema !== VAR_SCHEMA) {
+    const schema = state.varSchema || 0;
+
+    if (schema < 2) {
       const lang = zoneById(state.design && state.design.autotaskZone).lang;
       const repair = {};
       for (const legacy of Object.keys(LEGACY_TOKENS)) {
@@ -1937,8 +1949,20 @@
         if (token !== legacy) repair[legacy] = token;
       }
       if (state.templates) state.templates = replaceTokensDeep(state.templates, repair);
-      state.varSchema = VAR_SCHEMA;
     }
+
+    if (schema < 3 && state.templates) {
+      // Die Glühbirne steckt in gespeicherten Ständen als eigener Wert im
+      // Template-Config und würde den neuen Default sonst nie sehen. Selbst
+      // eingetragene andere Zeichen bleiben unangetastet.
+      state.templates.forEach(t => {
+        if (t.config && t.config.badgeGlyph === LEGACY_BADGE_GLYPH) {
+          t.config.badgeGlyph = DEFAULT_BADGE_GLYPH;
+        }
+      });
+    }
+
+    state.varSchema = VAR_SCHEMA;
 
     return state;
   }

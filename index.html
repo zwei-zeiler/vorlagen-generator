@@ -261,9 +261,15 @@
         <div class="sidebar-section-content">
 
           <div class="form-group">
+            <label for="ds-autotask-zone">Zone / Server</label>
+            <select id="ds-autotask-zone"></select>
+            <p class="field-hint" id="ds-autotask-zone-hint"></p>
+          </div>
+
+          <div class="form-group">
             <label for="ds-autotask-url">Autotask URL</label>
-            <input type="url" id="ds-autotask-url" placeholder="https://ww12.autotask.net/Mvc/ServiceDesk/TicketDetail.mvc?ticketId={id}">
-            <p class="field-hint">Verwende <code>{id}</code> als Platzhalter für die Ticket-Nummer.</p>
+            <input type="url" id="ds-autotask-url" placeholder="https://ww18.autotask.net/Mvc/ServiceDesk/TicketDetail.mvc?ticketId={id}">
+            <p class="field-hint">Wird aus der Zone vorbelegt. <code>{id}</code> steht für die interne Ticket-ID; eine selbst angepasste URL bleibt beim Zonenwechsel erhalten.</p>
           </div>
 
           <div class="form-group">

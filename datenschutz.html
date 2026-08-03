@@ -61,7 +61,7 @@
     <p>Weitere Angaben im <a href="/impressum.html">Impressum</a>.</p>
 
     <h2>2. Datenverarbeitung durch den Generator</h2>
-    <p>Dieses Tool verarbeitet sämtliche Eingaben grundsätzlich lokal in Ihrem Browser. Ausnahme: Bei Nutzung der Sharing-Funktion (siehe Abschnitt 3) werden Konfigurationsdaten temporär serverseitig gespeichert.</p>
+    <p>Dieses Tool verarbeitet sämtliche Eingaben ausschließlich lokal in Ihrem Browser. Das gilt auch für die Sharing-Funktion (siehe Abschnitt 3) — es werden keinerlei Konfigurationsdaten serverseitig gespeichert.</p>
     <ul>
       <li>Alle Konfigurationen (Design, Templates, Einstellungen) werden im <code>localStorage</code> Ihres Browsers gespeichert und verlassen Ihr Gerät nicht.</li>
       <li>Es findet keine Übertragung personenbezogener Daten an den Anbieter oder Dritte statt.</li>
@@ -73,24 +73,21 @@
     <h2>3. Sharing-Funktion</h2>
     <p>
       Der Generator bietet eine optionale Sharing-Funktion, mit der Sie Ihre
-      Template-Konfiguration über einen zeitlich begrenzten Link teilen können.
+      Template-Konfiguration über einen Link weitergeben können.
     </p>
     <ul>
       <li>Bei Nutzung der Funktion &bdquo;Link teilen&ldquo; wird Ihre aktuelle Konfiguration
-          (Design-Einstellungen, Template-Texte, Style-Auswahl) an unseren Server
-          übertragen und bei Upstash Inc. (USA) in einer Redis-Datenbank gespeichert.</li>
-      <li>Die gespeicherten Daten enthalten keine personenbezogenen Daten &mdash; es werden
-          ausschließlich die Template-Konfiguration und eine zufällig generierte ID
-          gespeichert.</li>
-      <li>Die Daten werden automatisch nach 7 Tagen unwiderruflich gelöscht (TTL-basierte
-          Lösung).</li>
-      <li>Rechtsgrundlage: Art. 6 Abs. 1 lit. a DSGVO (Einwilligung durch aktive Nutzung
-          der Sharing-Funktion).</li>
-      <li>Für die IP-basierte Missbrauchserkennung (Rate-Limiting) wird Ihre IP-Adresse
-          temporär (max. 60 Sekunden) serverseitig verarbeitet. Rechtsgrundlage:
-          Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an Missbrauchsschutz).</li>
-      <li>Weitere Informationen zum Auftragsverarbeiter:
-          <a href="https://upstash.com/trust/privacy" target="_blank" rel="noopener noreferrer">Upstash Privacy Policy</a>.</li>
+          (Design-Einstellungen, Template-Texte, Style-Auswahl) komprimiert und direkt in den
+          erzeugten Link geschrieben &mdash; in den Teil hinter dem Rautezeichen
+          (das sogenannte Fragment).</li>
+      <li>Dieser Fragment-Teil wird von Webbrowsern technisch bedingt <strong>nicht</strong> an
+          den Server übertragen. Ihre Konfiguration verlässt Ihren Browser also nicht und wird
+          von uns weder empfangen noch gespeichert.</li>
+      <li>Es findet keine Übermittlung an Dritte und keine Speicherung in einer Datenbank statt.
+          Eine serverseitige Verarbeitung Ihrer IP-Adresse für diese Funktion erfolgt nicht.</li>
+      <li>Der Link läuft nicht ab. Wer ihn besitzt, kann die enthaltene Konfiguration
+          wiederherstellen &mdash; geben Sie ihn daher nur an Personen weiter, die diese
+          Konfiguration sehen dürfen.</li>
     </ul>
 
     <h2>4. Hosting bei Vercel</h2>

@@ -47,6 +47,11 @@ Kein Dev-Server-Script. Statisch servieren, z.B.:
 
 - Share-Feature braucht Upstash Redis Env-Vars (`KV_REST_API_URL`/`_TOKEN` o. `UPSTASH_REDIS_REST_*`) in Vercel.
 - Output kennt **zwei Formen**: HTML-Code (für Autotask HTML-Feld) und Plain-Text (`generateEmailText`, für Autotask „Nur-Text"-Feld). PSA-`[Variablen]` bleiben in beiden erhalten.
+- **Zeichen im Output müssen in der BMP liegen** (U+0000–U+FFFF). Auf dem Weg in die
+  Autotask-Vorlage werden UTF-16-Surrogatpaare zerlegt und jede Hälfte durch `?` ersetzt:
+  die Glühbirne 💡 (U+1F4A1) kam beim Empfänger als `??` an, Umlaute und der Gedankenstrich
+  (U+2014) liefen sauber durch. Deshalb ist das Badge-Zeichen ⚡ (U+26A1) — BMP und trotzdem
+  farbiges Emoji. Kein Emoji ab U+10000 in Defaults oder Vorlagentexten verwenden.
 - **Variablennamen sind sprachabhängig.** Autotask übersetzt sie je Sprachversion, und die
   Sprache hängt an der Zone: `ww18` = Deutsch, `ww12` = Español, alle übrigen Englisch.
   `[Ticket: Titel]` löst in einer englischen Instanz nicht auf und umgekehrt. Die Zone steht

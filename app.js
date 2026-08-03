@@ -105,12 +105,66 @@
     saveToLocalStorage();
   }
 
+  // Die Konfiguration reist im URL-Fragment, nicht über einen Server: alles
+  // hinter '#' wird vom Browser nie gesendet. Kodierung: JSON → gzip →
+  // base64url; der Codec steht weiter unten.
+  const SHARE_FRAGMENT_PREFIX = '#c=';
+
   // ── Mobile Warning ──
   const mobileWarning = document.getElementById('mobile-warning');
   const mobileWarningDismiss = document.getElementById('mobile-warning-dismiss');
   if (mobileWarningDismiss) {
     mobileWarningDismiss.addEventListener('click', () => {
       mobileWarning.classList.add('dismissed');
+    });
+  }
+
+  // ── Intro-Karte beim Erstbesuch ──
+  // Läuft bewusst hier und nicht in init(): init() beginnt mit einem fetch,
+  // und die Karte soll stehen, bevor das Netzwerk geantwortet hat.
+  //
+  // Eigener localStorage-Schlüssel statt eines Feldes im State. Drei Gründe,
+  // alle im Code belegt: loadFromLocalStorage() übernimmt keine unbekannten
+  // Top-Level-Felder, exportConfig() und der Share-Codec bauen aus einer festen
+  // Feldliste (ein Flag in design wanderte sonst mit jedem geteilten Link mit),
+  // und das Zurücksetzen löscht STORAGE_KEY komplett — die Erklärkarte käme
+  // dann bei jedem Reset zurück, obwohl der Dialog nur das Zurücksetzen der
+  // Einstellungen verspricht.
+  const INTRO_KEY = 'psa-templates-intro-seen';
+
+  function introSuppressed() {
+    // Wer über einen geteilten Link oder ein Preset kommt, will das Ergebnis
+    // sehen und keine Erklärung. Das Fragment ist seit dem Wegfall des Backends
+    // die einzige Share-Form — ?share= und /s/:id gibt es nicht mehr.
+    if (window.location.hash.startsWith(SHARE_FRAGMENT_PREFIX)) return true;
+    if (new URLSearchParams(window.location.search).has('preset')) return true;
+    try {
+      return localStorage.getItem(INTRO_KEY) === '1';
+    } catch {
+      // Kein localStorage (privater Modus, blockierte Speicherung): dann lieber
+      // einmal zu viel erklären als eine Ausnahme werfen.
+      return false;
+    }
+  }
+
+  const introCard = document.getElementById('intro-card');
+  if (introCard && !introSuppressed()) {
+    introCard.classList.add('visible');
+    const dismissIntro = () => {
+      introCard.classList.remove('visible');
+      try {
+        localStorage.setItem(INTRO_KEY, '1');
+      } catch {
+        // Nicht speicherbar heißt: erscheint beim nächsten Besuch erneut.
+        // Kein Grund, das Schließen scheitern zu lassen.
+      }
+    };
+    document.getElementById('intro-card-dismiss').addEventListener('click', dismissIntro);
+    document.addEventListener('keydown', function onIntroEscape(e) {
+      if (e.key === 'Escape' && introCard.classList.contains('visible')) {
+        dismissIntro();
+        document.removeEventListener('keydown', onIntroEscape);
+      }
     });
   }
 
@@ -2159,12 +2213,9 @@
   }
 
   // ── Share Link Codec ──
-  // Die Konfiguration reist im URL-Fragment, nicht über einen Server: alles hinter
-  // '#' wird vom Browser nie gesendet. Kodierung: JSON → gzip → base64url.
-  // gzip statt deflate-raw, weil es einheitlicher unterstützt wird — der
-  // Größenunterschied liegt bei 0,6 %.
-  const SHARE_FRAGMENT_PREFIX = '#c=';
-
+  // SHARE_FRAGMENT_PREFIX steht oben bei den Konstanten, weil die Intro-Karte
+  // sie beim Start auswertet — dort wäre sie hier noch nicht initialisiert.
+  //
   // Ein Fragment ist beliebig manipulierbar. Ohne Obergrenze könnte eine gzip-Bombe
   // den Tab lahmlegen; der reale Worst Case (alle Vorlagen angepasst) liegt bei 12,8 KB.
   const SHARE_MAX_DECOMPRESSED_BYTES = 256 * 1024;

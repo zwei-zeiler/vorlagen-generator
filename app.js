@@ -6,9 +6,7 @@
   'use strict';
 
   // ── Sponsor / Support Links (easy to change) ──
-  const SPONSOR_COFFEE_URL = 'https://buymeacoffee.com/erwins.enkel';
   const SPONSOR_GITHUB_URL = 'https://github.com/sponsors/kai-osthoff';
-  const GITHUB_REPO_URL = 'https://github.com/erwins-enkel/psa-templates';
   const COMPANY_URL = 'https://www.erwins-enkel.dev';
 
   // ── Mobile Warning ──
@@ -2492,21 +2490,10 @@
     });
 
     // ── Sponsor dropdown ──
-    const sponsorBtn = $('#btn-sponsor');
-    const sponsorMenu = $('#sponsor-dropdown-menu');
-    sponsorBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      sponsorMenu.classList.toggle('open');
-    });
-    document.addEventListener('click', () => {
-      sponsorMenu.classList.remove('open');
-    });
-    $('#sponsor-coffee').href = SPONSOR_COFFEE_URL;
-    $('#sponsor-github').href = SPONSOR_GITHUB_URL;
+    $('#btn-sponsor').href = SPONSOR_GITHUB_URL;
 
     // ── Footer links ──
     $('#footer-brand-link').href = COMPANY_URL;
-    $('#footer-repo-link').href = GITHUB_REPO_URL;
 
     // ── Share link detection ──
     if (window.location.hash.startsWith(SHARE_FRAGMENT_PREFIX)) {

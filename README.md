@@ -35,4 +35,4 @@ MIT
 
 ---
 
-Ein Projekt der **Zweizeiler UG**.
+Ein Projekt der **[Erwins Enkel GmbH](https://www.erwins-enkel.dev)**.

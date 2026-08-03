@@ -10,13 +10,20 @@ Sichtbarer Produktname: **erwins enkel — PSA Templates**.
 
 | Was | Wo |
 |-----|-----|
+| **Betreiberin** | **Erwins Enkel GmbH**, Wiesbaden — `https://www.erwins-enkel.dev` |
 | **Git-Repo** | `github.com/erwins-enkel/psa-templates` (origin) |
 | **Live-Deploy** | Vercel, Team **zweizeiler** — Custom-Domain `https://psa-templates.erwins-enkel.dev` |
 
-> Repo-Owner (`erwins-enkel`) und Vercel-Team (`zweizeiler`) sind bewusst
-> unterschiedlich. Frühere Repo-Slugs `zwei-zeiler/vorlagen-generator` und
+> `zweizeiler` ist nur noch ein Vercel-Team-Slug, **keine Firmierung** — die frühere
+> Zweizeiler UG taucht im Produkt nicht mehr auf. Der Slug bleibt, weil ein Rename
+> Deploy-URLs bricht. Frühere Repo-Slugs `zwei-zeiler/vorlagen-generator` und
 > `erwins-enkel/vorlagen-generator` forwarden via GitHub-Redirect, sollten
 > aber nicht mehr verwendet werden.
+
+> **`impressum.html` und `datenschutz.html` spiegeln die Angaben von
+> `https://www.erwins-enkel.dev/impressum`.** Ändern sich dort Anschrift,
+> Geschäftsführung oder Registerdaten, hier nachziehen. HRB und USt-ID stehen
+> bewusst als `[bitte ergänzen]` — genau so wie auf der Firmenseite.
 
 ## Deploy
 

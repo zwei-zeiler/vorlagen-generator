@@ -1,8 +1,7 @@
 # PSA Templates — Projekt-Kontext
 
-Browser-basierter Generator für professionelle E-Mail-Vorlagen in
-PSA-Systemen (Autotask, HaloPSA u.a.). Kein Build, kein Framework —
-statische Files (`index.html`, `app.js`, `styles.css`).
+Browser-basierter Generator für professionelle E-Mail-Vorlagen in Autotask.
+Kein Build, kein Framework — statische Files (`index.html`, `app.js`, `styles.css`).
 
 Sichtbarer Produktname: **erwins enkel — PSA Templates**.
 

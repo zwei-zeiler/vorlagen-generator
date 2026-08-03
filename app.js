@@ -2151,6 +2151,165 @@
   }
 
   // ── JSON Export ──
+  // ── ZIP-Writer (store-only) ──
+  // Kompressionsmethode 0, von Hand gebaut. Jede fertige Bibliothek bräuchte
+  // einen Bundler (widerspricht der No-Build-Vorgabe) oder ein CDN — und
+  // script-src 'self' in vercel.json ließe ein CDN-Skript ohnehin nicht zu.
+  // Ein store-only-Archiv ist für Text ohnehin kaum größer als ein gepacktes,
+  // und jedes Betriebssystem öffnet es ohne Zusatzwerkzeug.
+
+  let crcTable = null;
+  function crc32(bytes) {
+    if (!crcTable) {
+      crcTable = new Uint32Array(256);
+      for (let i = 0; i < 256; i++) {
+        let c = i;
+        // IEEE-Polynom, reflektiert.
+        for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+        crcTable[i] = c >>> 0;
+      }
+    }
+    let crc = 0xFFFFFFFF;
+    for (let i = 0; i < bytes.length; i++) {
+      crc = crcTable[(crc ^ bytes[i]) & 0xFF] ^ (crc >>> 8);
+    }
+    return (crc ^ 0xFFFFFFFF) >>> 0;
+  }
+
+  // entries: [{ name, text }] — name ist ein reiner ASCII-Pfad, siehe
+  // buildTemplateArchive(). Rückgabe: Blob mit MIME application/zip.
+  function makeStoreZip(entries) {
+    const encoder = new TextEncoder();
+    const files = entries.map(e => ({
+      nameBytes: encoder.encode(e.name),
+      data: encoder.encode(e.text)
+    }));
+
+    const LOCAL_HEADER = 30;
+    const CENTRAL_HEADER = 46;
+    const EOCD = 22;
+    let localSize = 0;
+    let centralSize = 0;
+    for (const f of files) {
+      localSize += LOCAL_HEADER + f.nameBytes.length + f.data.length;
+      centralSize += CENTRAL_HEADER + f.nameBytes.length;
+    }
+
+    const out = new Uint8Array(localSize + centralSize + EOCD);
+    const view = new DataView(out.buffer);
+    let offset = 0;
+    const offsets = [];
+
+    for (const f of files) {
+      offsets.push(offset);
+      const crc = crc32(f.data);
+      view.setUint32(offset, 0x04034B50, true);      // Local File Header
+      view.setUint16(offset + 4, 20, true);          // benötigte Version
+      // Bit 11: Dateiname ist UTF-8. Die Namen sind zwar ASCII, aber das Flag
+      // zu setzen kostet nichts und macht die Zusage explizit.
+      view.setUint16(offset + 6, 0x0800, true);
+      view.setUint16(offset + 8, 0, true);           // Methode 0 = store
+      view.setUint16(offset + 10, 0, true);          // Uhrzeit
+      view.setUint16(offset + 12, 0x0021, true);     // Datum: 1980-01-01
+      view.setUint32(offset + 14, crc, true);
+      view.setUint32(offset + 18, f.data.length, true); // komprimiert …
+      view.setUint32(offset + 22, f.data.length, true); // … und unkomprimiert, bei Methode 0 gleich
+      view.setUint16(offset + 26, f.nameBytes.length, true);
+      view.setUint16(offset + 28, 0, true);          // kein Extra-Feld
+      offset += LOCAL_HEADER;
+      out.set(f.nameBytes, offset); offset += f.nameBytes.length;
+      out.set(f.data, offset); offset += f.data.length;
+      f.crc = crc;
+    }
+
+    const centralStart = offset;
+    files.forEach((f, i) => {
+      view.setUint32(offset, 0x02014B50, true);      // Central Directory
+      view.setUint16(offset + 4, 20, true);          // erzeugende Version
+      view.setUint16(offset + 6, 20, true);          // benötigte Version
+      view.setUint16(offset + 8, 0x0800, true);
+      view.setUint16(offset + 10, 0, true);
+      view.setUint16(offset + 12, 0, true);
+      view.setUint16(offset + 14, 0x0021, true);
+      view.setUint32(offset + 16, f.crc, true);
+      view.setUint32(offset + 20, f.data.length, true);
+      view.setUint32(offset + 24, f.data.length, true);
+      view.setUint16(offset + 28, f.nameBytes.length, true);
+      view.setUint16(offset + 30, 0, true);          // Extra
+      view.setUint16(offset + 32, 0, true);          // Kommentar
+      view.setUint16(offset + 34, 0, true);          // Datenträger
+      view.setUint16(offset + 36, 0, true);          // interne Attribute
+      view.setUint32(offset + 38, 0, true);          // externe Attribute
+      view.setUint32(offset + 42, offsets[i], true); // Offset des Local Headers
+      offset += CENTRAL_HEADER;
+      out.set(f.nameBytes, offset); offset += f.nameBytes.length;
+    });
+
+    view.setUint32(offset, 0x06054B50, true);        // End of Central Directory
+    view.setUint16(offset + 4, 0, true);
+    view.setUint16(offset + 6, 0, true);
+    view.setUint16(offset + 8, files.length, true);
+    view.setUint16(offset + 10, files.length, true);
+    view.setUint32(offset + 12, offset - centralStart, true);
+    view.setUint32(offset + 16, centralStart, true);
+    view.setUint16(offset + 20, 0, true);            // Archiv-Kommentar
+
+    return new Blob([out], { type: 'application/zip' });
+  }
+
+  // ── Bulk-Export aller Vorlagen ──
+  function exportAllTemplates() {
+    readDesignFromUI();
+
+    // generateEmailHtml() und generateEmailText() lesen den Style nicht aus
+    // einem Parameter, sondern aus state.activeStyle. Ohne die Umschaltung je
+    // Vorlage käme internal-notification im Kundenlayout heraus — oder, wenn
+    // gerade der interne Stil aktiv ist, alle Kundenvorlagen im internen.
+    // Die Regel ist dieselbe wie in applyAudienceStyleLock().
+    const previousStyle = state.activeStyle;
+    const entries = [];
+    const index = [];
+
+    for (const template of state.templates) {
+      state.activeStyle = template.id === 'internal-notification'
+        ? 'internal-minimal'
+        : (previousStyle === 'internal-minimal' ? 'modern-card' : previousStyle);
+
+      // useExampleData bleibt false, wie bei den Kopier-Buttons: im Export
+      // sollen die [Ticket: …]-Tokens stehen, nicht die Beispielwerte.
+      entries.push({ name: template.id + '/betreff.txt', text: template.subject || '' });
+      entries.push({ name: template.id + '/mail.html', text: generateEmailHtml(template, state.design, false) });
+      entries.push({ name: template.id + '/mail.txt', text: generateEmailText(template, state.design, false) });
+      index.push('  ' + template.id + '  —  ' + (template.name || template.id));
+    }
+
+    state.activeStyle = previousStyle;
+
+    const zone = getZone();
+    entries.unshift({
+      name: 'README.txt',
+      text: [
+        t('zip.readmeTitle'), '',
+        t('zip.readmeIntro'), '',
+        '  ' + t('zip.readmeSubject'),
+        '  ' + t('zip.readmeHtml'),
+        '  ' + t('zip.readmeText'), '',
+        t('zip.readmeNote', { zone: zone.id, lang: ZONE_LANG_LABELS[zone.lang] }), '',
+        t('zip.readmeIndex'), '',
+        index.join('\n'), ''
+      ].join('\n')
+    });
+
+    const blob = makeStoreZip(entries);
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = t('export.zipFilename', { date: new Date().toISOString().slice(0, 10) }) + '.zip';
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast(t('toast.exportedAll', { count: state.templates.length }));
+  }
+
   function exportConfig() {
     readDesignFromUI();
     const data = {
@@ -2610,6 +2769,7 @@
 
     // ── Export / Import ──
     $('#btn-export').addEventListener('click', exportConfig);
+    $('#btn-export-all').addEventListener('click', exportAllTemplates);
     $('#btn-import').addEventListener('click', () => {
       $('#import-file').click();
     });

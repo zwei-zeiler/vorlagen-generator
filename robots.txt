@@ -1,2 +1,4 @@
 User-agent: *
 Allow: /
+
+Sitemap: https://psa-templates.erwins-enkel.dev/sitemap.xml

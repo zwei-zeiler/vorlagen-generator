@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Die Pfade stehen bewusst ohne .html-Endung: vercel.json setzt "cleanUrls": true
+  und "trailingSlash": false, ein Abruf von /impressum.html leitet also auf
+  /impressum um. Die hier gelisteten Formen decken sich mit den canonical-Links
+  in den jeweiligen Dokumenten.
+-->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://psa-templates.erwins-enkel.dev/</loc>
+    <lastmod>2026-08-03</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://psa-templates.erwins-enkel.dev/impressum</loc>
+    <lastmod>2026-08-03</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+  <url>
+    <loc>https://psa-templates.erwins-enkel.dev/datenschutz</loc>
+    <lastmod>2026-08-03</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+</urlset>

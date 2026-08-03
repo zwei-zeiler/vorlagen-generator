@@ -1,9 +1,6 @@
 {
   "cleanUrls": true,
   "trailingSlash": false,
-  "rewrites": [
-    { "source": "/s/:id", "destination": "/?share=:id" }
-  ],
   "headers": [
     {
       "source": "/(.*)",

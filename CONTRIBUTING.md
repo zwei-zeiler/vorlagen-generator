@@ -5,11 +5,11 @@ Quick guide for anyone (human or agent) opening a PR.
 ## Project shape
 
 psa-templates is a **static, no-build site** — plain HTML, vanilla JS
-(`app.js`), and CSS, served as-is by Vercel. The only server-side piece is
-`api/share.js` (a Vercel serverless function backed by Upstash Redis).
-There is intentionally **no bundler, no framework, and no lint/test
-toolchain** — keep changes in that spirit unless there's a deliberate
-decision to add tooling.
+(`app.js`), and CSS, served as-is by Vercel. There is no server-side code
+and no runtime dependency; share links carry the configuration in the URL
+fragment. There is intentionally **no bundler, no framework, and no
+lint/test toolchain** — keep changes in that spirit unless there's a
+deliberate decision to add tooling.
 
 ## Code style
 
@@ -17,8 +17,8 @@ decision to add tooling.
   hand-formatted — don't reformat unrelated lines.
 - **No `console.log`** in committed code. Remove debug prints before opening
   the PR.
-- No secrets in the repo. Runtime config (Upstash credentials etc.) comes
-  from Vercel env vars; only `.env.example` is committed.
+- No secrets in the repo — the site has no backend and no runtime
+  configuration to keep secret.
 
 ## Commits
 

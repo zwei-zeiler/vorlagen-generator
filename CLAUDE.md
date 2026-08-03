@@ -47,12 +47,17 @@ Kein Dev-Server-Script. Statisch servieren, z.B.:
   generiert, nicht von Hand pflegen. Wird erst beim Öffnen des Variablen-Pickers geladen.
 - `tools/build-psa-catalog.py` — erzeugt die Kataloge aus den offiziellen Autotask-Tabellen;
   `--check` validiert `curated.json` dagegen (offline)
-- `api/share.js` — Vercel Serverless Function für Share-Links (Upstash Redis)
-- `vercel.json` — Rewrites (`/s/:id` → Share) + CSP/Security-Header
+- `vercel.json` — CSP/Security-Header
 
 ## Tech-Notizen
 
-- Share-Feature braucht Upstash Redis Env-Vars (`KV_REST_API_URL`/`_TOKEN` o. `UPSTASH_REDIS_REST_*`) in Vercel.
+- **Share-Links kommen ohne Backend aus.** Die Konfiguration steckt gzip-komprimiert und
+  base64url-kodiert im URL-Fragment (`/#c=…`); alles hinter `#` sendet der Browser nie an
+  den Server. Es gibt daher keine Serverless Function, keine Datenbank und keine Env-Vars.
+  Codec: `encodeShareFragment`/`decodeShareFragment` in `app.js`. Das Dekodieren ist auf
+  256 KiB dekomprimierte Größe begrenzt — ein Fragment ist manipulierbar, und ohne Grenze
+  wäre eine gzip-Bombe möglich. gzip statt `deflate-raw` wegen einheitlicherer
+  Browser-Unterstützung (Größenunterschied 0,6 %).
 - Output kennt **zwei Formen**: HTML-Code (für Autotask HTML-Feld) und Plain-Text (`generateEmailText`, für Autotask „Nur-Text"-Feld). PSA-`[Variablen]` bleiben in beiden erhalten.
 - **Zeichen im Output müssen in der BMP liegen** (U+0000–U+FFFF). Auf dem Weg in die
   Autotask-Vorlage werden UTF-16-Surrogatpaare zerlegt und jede Hälfte durch `?` ersetzt:

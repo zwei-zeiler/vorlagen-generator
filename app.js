@@ -2045,6 +2045,83 @@
     reader.readAsText(file);
   }
 
+  // ── Share Link Codec ──
+  // Die Konfiguration reist im URL-Fragment, nicht über einen Server: alles hinter
+  // '#' wird vom Browser nie gesendet. Kodierung: JSON → gzip → base64url.
+  // gzip statt deflate-raw, weil es einheitlicher unterstützt wird — der
+  // Größenunterschied liegt bei 0,6 %.
+  const SHARE_FRAGMENT_PREFIX = '#c=';
+
+  // Ein Fragment ist beliebig manipulierbar. Ohne Obergrenze könnte eine gzip-Bombe
+  // den Tab lahmlegen; der reale Worst Case (alle Vorlagen angepasst) liegt bei 12,8 KB.
+  const SHARE_MAX_DECOMPRESSED_BYTES = 256 * 1024;
+
+  function bytesToBase64Url(bytes) {
+    // Blockweise, weil String.fromCharCode(...bytes) bei großen Arrays den Stack sprengt.
+    let bin = '';
+    for (let i = 0; i < bytes.length; i += 0x8000) {
+      bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+    }
+    return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+
+  function base64UrlToBytes(str) {
+    if (!/^[A-Za-z0-9_-]+$/.test(str)) throw new Error('Ungültige base64url-Daten');
+    const b64 = str.replace(/-/g, '+').replace(/_/g, '/');
+    const rest = b64.length % 4;
+    if (rest === 1) throw new Error('Ungültige base64url-Länge');
+    const bin = atob(b64 + '='.repeat(rest ? 4 - rest : 0));
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return bytes;
+  }
+
+  async function encodeShareFragment(config) {
+    const raw = new TextEncoder().encode(JSON.stringify(config));
+    const stream = new Blob([raw]).stream().pipeThrough(new CompressionStream('gzip'));
+    return bytesToBase64Url(new Uint8Array(await new Response(stream).arrayBuffer()));
+  }
+
+  async function decodeShareFragment(encoded) {
+    const stream = new Blob([base64UrlToBytes(encoded)]).stream()
+      .pipeThrough(new DecompressionStream('gzip'));
+
+    // Gestreamt gelesen und mitgezählt, damit die Obergrenze greift, bevor der
+    // Inhalt vollständig im Speicher liegt. new Response(stream).text() wäre hier
+    // unbrauchbar — es puffert alles und macht die Grenze wirkungslos.
+    const reader = stream.getReader();
+    const chunks = [];
+    let total = 0;
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.length;
+      if (total > SHARE_MAX_DECOMPRESSED_BYTES) {
+        await reader.cancel();
+        throw new Error('Fragment überschreitet die zulässige Größe');
+      }
+      chunks.push(value);
+    }
+
+    const bytes = new Uint8Array(total);
+    let offset = 0;
+    for (const chunk of chunks) {
+      bytes.set(chunk, offset);
+      offset += chunk.length;
+    }
+
+    // Der abgelöste Endpunkt wies Payloads ohne version/design ab — geprüft wird
+    // weiterhin, nur eben hier. Ohne die Typprüfung auf templates würde
+    // applyConfig() den State halb überschreiben und dann mittendrin scheitern.
+    const config = JSON.parse(new TextDecoder().decode(bytes));
+    const valid =
+      config && typeof config === 'object' && !Array.isArray(config) &&
+      config.version && config.design && typeof config.design === 'object' &&
+      (config.templates === undefined || Array.isArray(config.templates));
+    if (!valid) throw new Error('Fragment enthält keine gültige Konfiguration');
+    return config;
+  }
+
   // ── Create Share Link ──
   async function createShareLink() {
     const popover = $('#share-popover');
@@ -2060,7 +2137,6 @@
     readDesignFromUI();
     const payload = {
       version: 1,
-      exportDate: new Date().toISOString(),
       varSchema: state.varSchema,
       design: state.design,
       templates: state.templates,
@@ -2068,66 +2144,38 @@
     };
 
     try {
-      const resp = await fetch('/api/share', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-
-      if (!resp.ok) {
-        const err = await resp.json().catch(() => ({}));
-        throw new Error(err.error || 'HTTP ' + resp.status);
-      }
-
-      const result = await resp.json();
+      const encoded = await encodeShareFragment(payload);
       stateLoading.style.display = 'none';
       stateSuccess.style.display = '';
-      $('#share-url-input').value = result.url;
-
-      const exp = new Date(result.expiresAt);
-      const dd = String(exp.getDate()).padStart(2, '0');
-      const mm = String(exp.getMonth() + 1).padStart(2, '0');
-      const yyyy = exp.getFullYear();
-      $('#share-expiry').textContent = 'Gültig bis ' + dd + '.' + mm + '.' + yyyy;
+      $('#share-url-input').value =
+        window.location.origin + '/' + SHARE_FRAGMENT_PREFIX + encoded;
+      $('#share-hint').textContent =
+        'Der Link enthält die komplette Konfiguration und läuft nicht ab.';
 
     } catch (err) {
       stateLoading.style.display = 'none';
       stateError.style.display = '';
-      const msg = err.message.includes('Rate limit')
-        ? 'Zu viele Anfragen. Bitte kurz warten.'
-        : 'Link konnte nicht erstellt werden. Bitte erneut versuchen.';
-      $('#share-error-msg').textContent = msg;
+      $('#share-error-msg').textContent =
+        'Link konnte nicht erstellt werden. Bitte erneut versuchen.';
       console.error('Share link error:', err);
     }
   }
 
   // ── Load From Share Link ──
-  async function loadFromShareLink(shareId) {
+  async function loadFromShareFragment(encoded) {
     try {
-      const resp = await fetch('/api/share/' + encodeURIComponent(shareId));
-
-      if (resp.status === 404) {
-        showToast('Dieser Share-Link ist abgelaufen oder ungueltig.');
-        window.history.replaceState({}, '', '/');
-        return;
-      }
-
-      if (!resp.ok) throw new Error('HTTP ' + resp.status);
-
-      const data = await resp.json();
+      const data = await decodeShareFragment(encoded);
       const accepted = await showConfirmModal();
 
       if (accepted) {
         applyConfig(data);
         showToast('Konfiguration aus Share-Link geladen');
       }
-      window.history.replaceState({}, '', '/');
-
     } catch (err) {
-      showToast('Fehler beim Laden des Share-Links.');
-      window.history.replaceState({}, '', '/');
+      showToast('Dieser Share-Link ist ungültig oder beschädigt.');
       console.error('Share link load error:', err);
     }
+    window.history.replaceState({}, '', '/');
   }
 
   // ── Show Confirm Modal ──
@@ -2461,10 +2509,8 @@
     $('#footer-repo-link').href = GITHUB_REPO_URL;
 
     // ── Share link detection ──
-    const shareParam = new URLSearchParams(window.location.search).get('share')
-      || (window.location.pathname.match(/^\/s\/(.+)$/) || [])[1];
-    if (shareParam) {
-      loadFromShareLink(shareParam);
+    if (window.location.hash.startsWith(SHARE_FRAGMENT_PREFIX)) {
+      loadFromShareFragment(window.location.hash.slice(SHARE_FRAGMENT_PREFIX.length));
     }
 
     // ── Keyboard shortcuts ──

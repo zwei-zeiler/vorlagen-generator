@@ -9,6 +9,102 @@
   const SPONSOR_GITHUB_URL = 'https://github.com/sponsors/kai-osthoff';
   const COMPANY_URL = 'https://www.erwins-enkel.dev';
 
+  // ── Oberflächensprache ──
+  // NICHT zu verwechseln mit der Variablensprache: die hängt an
+  // design.autotaskZone und wird von varLang() bedient. Beide Achsen sind
+  // unabhängig — eine englische Oberfläche darf eine deutsche Autotask-Instanz
+  // bedienen und umgekehrt.
+  const UI_LANGS = ['de', 'en'];
+  const DEFAULT_UI_LANG = 'de';
+  let strings = {};
+
+  function normalizeUiLang(lang) {
+    return UI_LANGS.includes(lang) ? lang : DEFAULT_UI_LANG;
+  }
+
+  // Reihenfolge: ?lang= → gespeicherter Stand → navigator.language → Default.
+  // Der gespeicherte Stand wird hier roh gelesen, weil die Locale feststehen
+  // muss, bevor loadFromLocalStorage() läuft — sonst holt init() erst die
+  // falsche Datei und danach noch einmal die richtige.
+  function detectUiLang() {
+    const fromQuery = new URLSearchParams(window.location.search).get('lang');
+    if (UI_LANGS.includes(fromQuery)) return fromQuery;
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+      const savedLang = saved && saved.design && saved.design.uiLang;
+      if (UI_LANGS.includes(savedLang)) return savedLang;
+    } catch {
+      // Ein kaputter Stand darf die Sprachwahl nicht sprengen.
+    }
+    const nav = (navigator.language || '').toLowerCase();
+    if (nav.startsWith('de')) return 'de';
+    if (nav) return 'en';
+    return DEFAULT_UI_LANG;
+  }
+
+  async function loadLocale(lang) {
+    try {
+      const resp = await fetch('/i18n/' + lang + '.json');
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      return await resp.json();
+    } catch (e) {
+      console.warn('Could not load locale ' + lang + ':', e);
+      return null;
+    }
+  }
+
+  // Fällt auf den Schlüssel selbst zurück statt auf einen leeren String — eine
+  // fehlende Übersetzung soll auffallen, nicht verschwinden.
+  function t(key, params) {
+    let out = Object.prototype.hasOwnProperty.call(strings, key) ? strings[key] : key;
+    if (params) {
+      for (const p of Object.keys(params)) {
+        out = out.split('{' + p + '}').join(params[p]);
+      }
+    }
+    return out;
+  }
+
+  function applyStaticTranslations() {
+    for (const el of $$('[data-i18n]')) el.textContent = t(el.dataset.i18n);
+    for (const el of $$('[data-i18n-placeholder]')) el.placeholder = t(el.dataset.i18nPlaceholder);
+    for (const el of $$('[data-i18n-title]')) el.title = t(el.dataset.i18nTitle);
+
+    document.documentElement.lang = t('meta.htmlLang');
+    document.title = t('meta.title');
+    const desc = document.querySelector('meta[name="description"]');
+    if (desc) desc.content = t('meta.description');
+    const ogLocale = document.querySelector('meta[property="og:locale"]');
+    if (ogLocale) ogLocale.content = t('meta.ogLocale');
+
+    for (const btn of $$('#lang-switch button')) {
+      btn.classList.toggle('active', btn.dataset.uiLang === state.design.uiLang);
+    }
+  }
+
+  // Alles, was Text aus t() erzeugt, statt ihn im Markup stehen zu haben.
+  function rerenderTranslatedUi() {
+    applyStaticTranslations();
+    renderZoneOptions();
+    $('#ds-autotask-zone').value = state.design.autotaskZone;
+    updateZoneHint();
+    renderTemplateTabs();
+    renderSectionToggles();
+    renderTemplateConfig();
+    updateSidebarBadges();
+  }
+
+  async function setUiLang(lang) {
+    const next = normalizeUiLang(lang);
+    if (next === state.design.uiLang) return;
+    const loaded = await loadLocale(next);
+    if (!loaded) return;
+    strings = loaded;
+    state.design.uiLang = next;
+    rerenderTranslatedUi();
+    saveToLocalStorage();
+  }
+
   // ── Mobile Warning ──
   const mobileWarning = document.getElementById('mobile-warning');
   const mobileWarningDismiss = document.getElementById('mobile-warning-dismiss');
@@ -25,29 +121,32 @@
   // löst in einer deutschen Instanz nicht auf — die Variable steht dann im
   // Klartext in der Mail beim Kunden.
   // Quelle: psa.datto.com/help/DeveloperHelp/Content/APIs/General/API_Zones.htm
+  // Die Regionsbezeichnung steht in den Locale-Dateien unter zone.<id>; hier
+  // nur id und lang. lang steuert varLang() und damit die Variablennamen —
+  // es hat nichts mit der Oberflächensprache zu tun.
   const AUTOTASK_ZONES = [
-    { id: 'ww18', lang: 'de', label: 'ww18 — Deutschland / Europa' },
-    { id: 'prde', lang: 'de', label: 'prde — Pre-Release (Deutsch)' },
-    { id: 'ww3', lang: 'en', label: 'ww3 — America East' },
-    { id: 'ww14', lang: 'en', label: 'ww14 — America East 2' },
-    { id: 'ww22', lang: 'en', label: 'ww22 — America East 3' },
-    { id: 'ww5', lang: 'en', label: 'ww5 — America West' },
-    { id: 'ww15', lang: 'en', label: 'ww15 — America West 2' },
-    { id: 'ww24', lang: 'en', label: 'ww24 — America West 3' },
-    { id: 'ww25', lang: 'en', label: 'ww25 — America West 4' },
-    { id: 'ww4', lang: 'en', label: 'ww4 — UK' },
-    { id: 'ww16', lang: 'en', label: 'ww16 — UK 2' },
-    { id: 'ww28', lang: 'en', label: 'ww28 — UK 3' },
-    { id: 'ww6', lang: 'en', label: 'ww6 — Australien / Neuseeland' },
-    { id: 'ww26', lang: 'en', label: 'ww26 — Australien 2' },
-    { id: 'ww29', lang: 'en', label: 'ww29 — Australien 3' },
-    { id: 'ww19', lang: 'en', label: 'ww19 — EU (Englisch, Europa/Asien)' },
-    { id: 'ww1', lang: 'en', label: 'ww1 — Limited Release' },
-    { id: 'ww2', lang: 'en', label: 'ww2 — Pre-Release' },
-    { id: 'ww11', lang: 'en', label: 'ww11 — Pre-Release (UK)' },
-    { id: 'ww17', lang: 'en', label: 'ww17 — Limited Release (UK)' },
-    { id: 'ww12', lang: 'es', label: 'ww12 — Spanien / Europa' },
-    { id: 'pres', lang: 'es', label: 'pres — Pre-Release (Español)' }
+    { id: 'ww18', lang: 'de' },
+    { id: 'prde', lang: 'de' },
+    { id: 'ww3', lang: 'en' },
+    { id: 'ww14', lang: 'en' },
+    { id: 'ww22', lang: 'en' },
+    { id: 'ww5', lang: 'en' },
+    { id: 'ww15', lang: 'en' },
+    { id: 'ww24', lang: 'en' },
+    { id: 'ww25', lang: 'en' },
+    { id: 'ww4', lang: 'en' },
+    { id: 'ww16', lang: 'en' },
+    { id: 'ww28', lang: 'en' },
+    { id: 'ww6', lang: 'en' },
+    { id: 'ww26', lang: 'en' },
+    { id: 'ww29', lang: 'en' },
+    { id: 'ww19', lang: 'en' },
+    { id: 'ww1', lang: 'en' },
+    { id: 'ww2', lang: 'en' },
+    { id: 'ww11', lang: 'en' },
+    { id: 'ww17', lang: 'en' },
+    { id: 'ww12', lang: 'es' },
+    { id: 'pres', lang: 'es' }
   ];
 
   const ZONE_LANG_LABELS = { de: 'Deutsch', en: 'English', es: 'Español' };
@@ -115,7 +214,11 @@
     // Passend zur Default-Zone vorbelegt. Gespeicherte Stände überschreiben das,
     // eine leer gelassene URL bleibt also leer.
     autotaskUrl: zoneUrlFor(AUTOTASK_ZONES[0]),
-    autotaskLinkText: 'In Autotask öffnen'
+    autotaskLinkText: 'In Autotask öffnen',
+    // Sprache der Bedienoberfläche. Liegt hier, damit saveToLocalStorage() sie
+    // ohne Sonderweg mitschreibt — applyConfig() nimmt sie aber bewusst NICHT
+    // aus einer geladenen Nutzlast, siehe dort.
+    uiLang: DEFAULT_UI_LANG
   };
 
   // ── Style Definitions ──
@@ -523,18 +626,20 @@
   };
 
   // ── Section Definitions ──
+  // key ist Teil des gespeicherten States und darf sich nicht ändern; die
+  // Beschriftung kommt zur Laufzeit aus der Locale.
   const SECTIONS = [
-    { key: 'previewText', label: 'Preview Text', tooltip: 'Der Vorschautext wird in E-Mail-Clients (Outlook, Gmail, Apple Mail) in der Inbox neben dem Betreff angezeigt, bevor die E-Mail geöffnet wird. Er ist im geöffneten Mail unsichtbar.' },
-    { key: 'header', label: 'Header Bar' },
-    { key: 'ticketInfo', label: 'Ticket Info Bar' },
-    { key: 'iconBadge', label: 'Icon-Badge' },
-    { key: 'messageBody', label: 'Message Body' },
-    { key: 'ctaButton', label: 'CTA Button' },
-    { key: 'bookingButton', label: 'Terminbuchung' },
-    { key: 'kundenportal', label: 'Kundenportal' },
-    { key: 'signature', label: 'Signatur' },
-    { key: 'footer', label: 'Footer' },
-    { key: 'legalFooter', label: 'Legal-Footer' }
+    { key: 'previewText', hasTooltip: true },
+    { key: 'header' },
+    { key: 'ticketInfo' },
+    { key: 'iconBadge' },
+    { key: 'messageBody' },
+    { key: 'ctaButton' },
+    { key: 'bookingButton' },
+    { key: 'kundenportal' },
+    { key: 'signature' },
+    { key: 'footer' },
+    { key: 'legalFooter' }
   ];
 
   // ── Helpers ──
@@ -1395,7 +1500,8 @@
       for (const zone of zones) {
         const option = document.createElement('option');
         option.value = zone.id;
-        option.textContent = zone.label;
+        // Der Zonen-Code ist neutral, nur die Regionsbezeichnung wird übersetzt.
+        option.textContent = zone.id + ' — ' + t('zone.' + zone.id);
         group.appendChild(option);
       }
       select.appendChild(group);
@@ -1404,7 +1510,7 @@
 
   function updateZoneHint() {
     $('#ds-autotask-zone-hint').textContent =
-      `Variablensprache: ${ZONE_LANG_LABELS[varLang()]} — Picker und Ausgabe nutzen die Namen dieser Sprachversion.`;
+      t('zoneHint', { lang: ZONE_LANG_LABELS[varLang()] });
   }
 
   function onZoneChange(nextId) {
@@ -1433,8 +1539,8 @@
     if (result) {
       const langLabel = ZONE_LANG_LABELS[nextLang];
       showToast(result.unknown
-        ? `${result.replaced} Variablen auf ${langLabel} umgestellt — ${result.unknown} unbekannte unverändert`
-        : `${result.replaced} Variablen auf ${langLabel} umgestellt`);
+        ? t('toast.retokenizedUnknown', { count: result.replaced, lang: langLabel, unknown: result.unknown })
+        : t('toast.retokenized', { count: result.replaced, lang: langLabel }));
     }
   }
 
@@ -1499,8 +1605,8 @@
       container.appendChild(group);
     }
 
-    renderGroup('An Kunde', customerTemplates);
-    renderGroup('Intern', internalTemplates);
+    renderGroup(t('tabs.customer'), customerTemplates);
+    renderGroup(t('tabs.internal'), internalTemplates);
   }
 
   // ── Render Section Toggles ──
@@ -1515,12 +1621,12 @@
       div.className = 'section-toggle';
 
       const span = document.createElement('span');
-      span.textContent = sec.label;
-      if (sec.tooltip) {
+      span.textContent = t('section.' + sec.key);
+      if (sec.hasTooltip) {
         const info = document.createElement('span');
         info.className = 'info-tooltip';
         info.textContent = 'i';
-        info.title = sec.tooltip;
+        info.title = t('section.' + sec.key + '.tooltip');
         span.appendChild(info);
       }
 
@@ -1559,15 +1665,15 @@
 
       const label = document.createElement('label');
       label.setAttribute('for', 'tpl-notification-type');
-      label.textContent = 'Benachrichtigungstyp';
+      label.textContent = t('notify.label');
 
       const select = document.createElement('select');
       select.id = 'tpl-notification-type';
 
       const options = [
-        { value: 'queue',    label: 'Neues Ticket in Queue' },
-        { value: 'assigned', label: 'Ticket zugewiesen' },
-        { value: 'sla',      label: 'SLA-Warnung' }
+        { value: 'queue',    label: t('notify.queue') },
+        { value: 'assigned', label: t('notify.assigned') },
+        { value: 'sla',      label: t('notify.sla') }
       ];
       for (const opt of options) {
         const el = document.createElement('option');
@@ -1618,17 +1724,17 @@
     const isInternal = template.audience === 'internal';
 
     const fields = [
-      { key: 'customHeading', label: 'Überschrift', type: 'text', placeholder: 'z.B. Ihr Ticket wird bearbeitet' },
-      { key: 'customIntro', label: 'Einleitungstext', type: 'textarea', placeholder: 'Begrüßung und Einleitung...' },
-      { key: 'previewTextVar', label: 'Preview Text (Mail-Vorschau)', type: 'text', placeholder: '[Variable] oder freier Text' },
-      { key: 'messageBodyVar', label: 'Nachrichtentext (Variable)', type: 'text', placeholder: `z.B. ${tokenFor('ticket.noteDescription')}` },
+      { key: 'customHeading', type: 'text' },
+      { key: 'customIntro', type: 'textarea' },
+      { key: 'previewTextVar', type: 'text' },
+      { key: 'messageBodyVar', type: 'text', placeholder: t('tmpl.messageBodyVar.placeholder', { token: tokenFor('ticket.noteDescription') }) },
       ...(!isInternal ? [
-        { key: 'ctaText', label: 'CTA Button Text', type: 'text', placeholder: 'Ticket im Portal ansehen' },
-        { key: 'ctaLink', label: 'CTA Button Link', type: 'text', placeholder: tokenFor('ticket.numberWithLink') },
-        { key: 'footerText', label: 'Footer Text', type: 'text', placeholder: 'Fußzeilentext...' },
+        { key: 'ctaText', type: 'text' },
+        { key: 'ctaLink', type: 'text', placeholder: tokenFor('ticket.numberWithLink') },
+        { key: 'footerText', type: 'text' },
       ] : []),
-      { key: 'badgeGlyph', label: 'Badge-Zeichen', type: 'text', placeholder: `Leer = ${DEFAULT_BADGE_GLYPH}` },
-      { key: 'headerColorOverride', label: 'Header-Farbe (Override)', type: 'text', placeholder: 'Leer = Design-Hauptfarbe, z.B. #4a4a4a' }
+      { key: 'badgeGlyph', type: 'text', placeholder: t('tmpl.badgeGlyph.placeholder', { glyph: DEFAULT_BADGE_GLYPH }) },
+      { key: 'headerColorOverride', type: 'text' }
     ];
 
     for (const f of fields) {
@@ -1642,13 +1748,13 @@
       labelRow.style.marginBottom = '4px';
 
       const label = document.createElement('label');
-      label.textContent = f.label;
+      label.textContent = t('tmpl.' + f.key);
       label.style.margin = '0';
 
       const varBtn = document.createElement('button');
       varBtn.className = 'btn btn-sm btn-insert-var';
-      varBtn.textContent = '+Var';
-      varBtn.title = 'Variable einfügen';
+      varBtn.textContent = t('btn.insertVar');
+      varBtn.title = t('btn.insertVar.title');
       varBtn.dataset.configKey = f.key;
       varBtn.addEventListener('click', () => {
         openVarPicker((variable) => {
@@ -1670,7 +1776,7 @@
         input = document.createElement('input');
         input.type = 'text';
       }
-      input.placeholder = f.placeholder;
+      input.placeholder = f.placeholder !== undefined ? f.placeholder : t('tmpl.' + f.key + '.placeholder');
       input.value = c[f.key] || '';
       input.addEventListener('input', () => {
         c[f.key] = input.value;
@@ -1773,14 +1879,14 @@
     }
 
     let html = '';
-    if (curatedGroups.length) html += varPickerGroupHtml('Häufig genutzt', curatedGroups);
+    if (curatedGroups.length) html += varPickerGroupHtml(t('picker.common'), curatedGroups);
     if (catalogGroups.length) {
       html += varPickerGroupHtml(
-        `Alle Variablen (Autotask-Katalog, ${ZONE_LANG_LABELS[lang]})`,
+        t('picker.all', { lang: ZONE_LANG_LABELS[lang] }),
         catalogGroups
       );
     }
-    if (!html) html = '<div class="var-empty">Keine Variable gefunden.</div>';
+    if (!html) html = '<div class="var-empty">' + escapeHtml(t('picker.empty')) + '</div>';
     body.innerHTML = html;
   }
 
@@ -1790,23 +1896,25 @@
     const activeTemplate = getActiveTemplate();
     const autotaskWarn = (d.autotaskUrl && !d.autotaskUrl.includes('{id}')) ||
       (!d.autotaskUrl && activeTemplate && activeTemplate.audience === 'internal');
+    // Schluessel sind die stabilen data-section-Werte aus index.html, nicht der
+    // sichtbare Header-Text — der wechselt mit der Oberflaechensprache.
     const checks = {
-      'Design System': (d.logoEnabled !== false && !d.logoUrl) || d.company === 'Muster GmbH' || d.web === 'https://www.example.com',
-      'Rechtliche Angaben': d.legalCeo === 'Max Mustermann' || d.legalRegNr === 'HRB 12345 B' || d.legalImprintUrl === 'https://www.example.com/impressum/',
-      'Terminbuchung': false,
-      'Kundenportal': false,
-      'Autotask': autotaskWarn
+      designSystem: (d.logoEnabled !== false && !d.logoUrl) || d.company === 'Muster GmbH' || d.web === 'https://www.example.com',
+      legal: d.legalCeo === 'Max Mustermann' || d.legalRegNr === 'HRB 12345 B' || d.legalImprintUrl === 'https://www.example.com/impressum/',
+      booking: false,
+      portal: false,
+      autotask: autotaskWarn
     };
     $$('.sidebar-section-header').forEach(header => {
       const label = header.querySelector('span:first-child');
       if (!label) return;
-      const name = label.textContent.trim();
+      const section = header.dataset.section;
       const existing = header.querySelector('.badge-warn');
       if (existing) existing.remove();
-      if (checks[name]) {
+      if (section && checks[section]) {
         const badge = document.createElement('span');
         badge.className = 'badge-warn';
-        badge.title = 'Bitte anpassen';
+        badge.title = t('badge.needsAttention');
         label.appendChild(badge);
       }
     });
@@ -1936,6 +2044,9 @@
       // Unbekannte Zone-IDs (alter Export, Tippfehler im Import) auf den Default
       // normalisieren, damit gespeicherter Stand und UI nicht auseinanderlaufen.
       state.design.autotaskZone = zoneById(state.design.autotaskZone).id;
+      // Dasselbe für die Oberflächensprache: ein Stand von vor der
+      // Zweisprachigkeit hat gar kein uiLang, ein manipulierter einen ungültigen.
+      state.design.uiLang = normalizeUiLang(state.design.uiLang);
     }
 
     const schema = state.varSchema || 0;
@@ -2000,15 +2111,19 @@
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `email-vorlagen-${new Date().toISOString().slice(0,10)}.json`;
+    a.download = t('export.filename', { date: new Date().toISOString().slice(0, 10) }) + '.json';
     a.click();
     URL.revokeObjectURL(url);
-    showToast('Konfiguration exportiert');
+    showToast(t('toast.exported'));
   }
 
   // ── Apply Config (shared by import and share link loading) ──
   function applyConfig(data) {
-    if (data.design) state.design = { ...DEFAULT_DESIGN, ...data.design };
+    // Die Oberflächensprache ist eine Einstellung des Lesers, keine Eigenschaft
+    // der Konfiguration. Ohne diese Zeile zwänge ein geteilter Link oder ein
+    // importiertes JSON dem Empfänger die Sprache des Absenders auf.
+    const keepUiLang = state.design.uiLang;
+    if (data.design) state.design = { ...DEFAULT_DESIGN, ...data.design, uiLang: keepUiLang };
     if (data.templates) state.templates = data.templates;
     // Der Stand der geladenen Konfiguration zählt, nicht der der laufenden
     // Sitzung — sonst überspringt ein Import in eine bereits migrierte Sitzung
@@ -2034,9 +2149,9 @@
       try {
         const data = JSON.parse(e.target.result);
         applyConfig(data);
-        showToast('Konfiguration importiert');
+        showToast(t('toast.imported'));
       } catch (err) {
-        showToast('Fehler beim Import: ungültige JSON-Datei');
+        showToast(t('toast.importFailed'));
         console.error(err);
       }
     };
@@ -2147,8 +2262,7 @@
       stateSuccess.style.display = '';
       $('#share-url-input').value =
         window.location.origin + '/' + SHARE_FRAGMENT_PREFIX + encoded;
-      $('#share-hint').textContent =
-        'Der Link enthält die komplette Konfiguration und läuft nicht ab.';
+      $('#share-hint').textContent = t('share.hint');
 
     } catch (err) {
       stateLoading.style.display = 'none';
@@ -2167,10 +2281,10 @@
 
       if (accepted) {
         applyConfig(data);
-        showToast('Konfiguration aus Share-Link geladen');
+        showToast(t('toast.shareLoaded'));
       }
     } catch (err) {
-      showToast('Dieser Share-Link ist ungültig oder beschädigt.');
+      showToast(t('toast.shareInvalid'));
       console.error('Share link load error:', err);
     }
     window.history.replaceState({}, '', '/');
@@ -2213,7 +2327,7 @@
   async function copyToClipboard(text, label) {
     try {
       await navigator.clipboard.writeText(text);
-      showToast(`${label} kopiert!`);
+      showToast(t('toast.copied', { label }));
     } catch {
       const ta = document.createElement('textarea');
       ta.value = text;
@@ -2223,7 +2337,7 @@
       ta.select();
       document.execCommand('copy');
       document.body.removeChild(ta);
-      showToast(`${label} kopiert!`);
+      showToast(t('toast.copied', { label }));
     }
   }
 
@@ -2256,22 +2370,34 @@
 
   // ── Initialize ──
   async function init() {
-    // Load autotask variables — muss vor loadFromLocalStorage stehen, die
-    // Reparatur alter Stände braucht die Übersetzungstabelle.
-    try {
-      const resp = await fetch('/psa/autotask/curated.json');
-      if (!resp.ok) throw new Error('HTTP ' + resp.status);
-      curatedVars = await resp.json();
-    } catch (e) {
-      console.error('Could not load PSA variables:', e);
-      showToast('Variablen konnten nicht geladen werden — bitte Seite neu laden.');
-    }
+    // Beide Abrufe parallel: die Locale braucht keine Variablen und umgekehrt.
+    // curated.json muss vor loadFromLocalStorage stehen, weil die Reparatur
+    // alter Stände die Übersetzungstabelle braucht; die Locale muss stehen,
+    // bevor irgendeine Render-Funktion das erste Mal Text erzeugt.
+    const uiLang = detectUiLang();
+    const [curatedResult, localeResult] = await Promise.all([
+      fetch('/psa/autotask/curated.json')
+        .then(r => (r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status))))
+        .catch(e => { console.error('Could not load PSA variables:', e); return null; }),
+      loadLocale(uiLang)
+    ]);
+
+    curatedVars = curatedResult;
+    // Ohne Locale bleiben die deutschen Texte aus dem Markup stehen — lesbar,
+    // statt einer Seite voller Schlüsselnamen.
+    strings = localeResult || {};
+    if (!curatedVars) showToast(t('toast.varsFailed'));
 
     // Zonen-Dropdown befüllen, bevor writeDesignToUI die Auswahl setzt
     renderZoneOptions();
 
     // Load state from localStorage
     loadFromLocalStorage();
+
+    // Die erkannte Sprache gewinnt gegen den gespeicherten Stand: nur so wirkt
+    // ?lang= auf einem Gerät, das bereits eine andere Wahl gespeichert hat.
+    state.design.uiLang = localeResult ? uiLang : DEFAULT_UI_LANG;
+    applyStaticTranslations();
 
     // Write design to UI
     writeDesignToUI();
@@ -2328,7 +2454,7 @@
         this.value = '';
         readDesignFromUI();
         onStateChange();
-        showToast('Nur http(s) URLs erlaubt — Eingabe verworfen');
+        showToast(t('toast.badProtocol'));
       }
       updateSidebarBadges();
     });
@@ -2388,32 +2514,32 @@
       const template = getActiveTemplate();
       if (!template) return;
       const html = generateEmailHtml(template, state.design, false);
-      copyToClipboard(html, 'HTML-Code');
+      copyToClipboard(html, t('copy.html'));
     });
     $('#btn-copy-code-2').addEventListener('click', () => {
       const template = getActiveTemplate();
       if (!template) return;
       const html = generateEmailHtml(template, state.design, false);
-      copyToClipboard(html, 'HTML-Code');
+      copyToClipboard(html, t('copy.html'));
     });
     const copyTextHandler = () => {
       const template = getActiveTemplate();
       if (!template) return;
       const text = generateEmailText(template, state.design, false);
-      copyToClipboard(text, 'Plain-Text');
+      copyToClipboard(text, t('copy.text'));
     };
     $('#btn-copy-text').addEventListener('click', copyTextHandler);
     $('#btn-copy-text-2').addEventListener('click', copyTextHandler);
     $('#btn-copy-subject').addEventListener('click', () => {
       const template = getActiveTemplate();
       if (!template) return;
-      copyToClipboard(template.subject, 'Betreff');
+      copyToClipboard(template.subject, t('copy.subject'));
     });
 
     // ── Variable picker ──
     $('#btn-vars').addEventListener('click', () => {
       openVarPicker((variable) => {
-        copyToClipboard(variable, 'Variable');
+        copyToClipboard(variable, t('copy.variable'));
       });
     });
     $('#var-picker-close').addEventListener('click', closeVarPicker);
@@ -2446,12 +2572,16 @@
     // ── Reset ──
     $('#btn-reset').addEventListener('click', async () => {
       const accepted = await showConfirmModal(
-        'Zurücksetzen?',
-        'Alle Einstellungen werden auf die Standardwerte zurückgesetzt. Ihre aktuelle Konfiguration geht dabei verloren.'
+        t('modal.resetTitle'),
+        t('modal.resetText')
       );
       if (accepted) {
         localStorage.removeItem(STORAGE_KEY);
-        state.design = { ...DEFAULT_DESIGN };
+        // Die Oberflächensprache überlebt das Zurücksetzen: der Dialog
+        // verspricht, die Konfiguration zurückzusetzen — nicht, die Seite
+        // unter der Hand auf eine andere Sprache zu stellen.
+        const keepUiLang = state.design.uiLang;
+        state.design = { ...DEFAULT_DESIGN, uiLang: keepUiLang };
         state.templates = JSON.parse(JSON.stringify(DEFAULT_TEMPLATES));
         state.activeTemplateId = 'ticket-note';
         state.activeStyle = 'modern-card';
@@ -2462,7 +2592,7 @@
         renderTemplateConfig();
         renderSubjectField();
         onStateChange();
-        showToast('Einstellungen zurückgesetzt');
+        showToast(t('toast.reset'));
       }
     });
 
@@ -2476,7 +2606,7 @@
     });
     $('#btn-copy-share-url').addEventListener('click', () => {
       const url = $('#share-url-input').value;
-      copyToClipboard(url, 'Link');
+      copyToClipboard(url, t('copy.link'));
     });
     $('#btn-share-retry').addEventListener('click', () => {
       createShareLink();
@@ -2491,6 +2621,11 @@
 
     // ── Sponsor dropdown ──
     $('#btn-sponsor').href = SPONSOR_GITHUB_URL;
+
+    // ── Sprachumschalter ──
+    for (const btn of $$('#lang-switch button')) {
+      btn.addEventListener('click', () => setUiLang(btn.dataset.uiLang));
+    }
 
     // ── Footer links ──
     $('#footer-brand-link').href = COMPANY_URL;

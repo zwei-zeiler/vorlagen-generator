@@ -21,8 +21,11 @@ Sichtbarer Produktname: **erwins enkel — PSA Templates**.
 
 > **`impressum.html` und `datenschutz.html` spiegeln die Angaben von
 > `https://www.erwins-enkel.dev/impressum`.** Ändern sich dort Anschrift,
-> Geschäftsführung oder Registerdaten, hier nachziehen. HRB und USt-ID stehen
-> bewusst als `[bitte ergänzen]` — genau so wie auf der Firmenseite.
+> Geschäftsführung oder Registerdaten, hier nachziehen. HRB und USt-ID liegen von den
+> Behörden noch nicht vor; `impressum.html` benennt deshalb den Gründungsstand
+> („Eintragung ist beantragt", USt-IdNr. „bisher nicht erteilt") statt Platzhaltern.
+> Sobald beide Nummern vorliegen, hier **und** auf der Firmenseite eintragen — Issue #27.
+> Keine Steuernummer aufnehmen (keine Pflichtangabe nach § 5 DDG).
 
 > **Die Projektkarte auf `https://www.erwins-enkel.dev` liegt in einem anderen Repo:**
 > `erwins-enkel/enkels-web` → `components/landing/projects.tsx` (Array `projects`,

@@ -42,6 +42,31 @@ Die Kataloge erzeugt `tools/build-psa-catalog.py` aus den offiziellen Autotask-T
 Weitere PSA-Systeme koennen grundsaetzlich als eigene JSON-Datei ergaenzt werden — heute
 ist keines davon umgesetzt.
 
+## Lizenz
+
+[Business Source License 1.1](./LICENSE) © 2026 Erwins Enkel GmbH
+
+PSA Templates ist **source-available, nicht Open Source**. Lesen, aendern,
+weitergeben und produktiv nutzen ist frei — auch geschaeftlich und auf einer
+eigenen Instanz. Nicht erlaubt ist, das Projekt oder eine abgeleitete Fassung
+**Dritten zu einem kommerziellen Zweck bereitzustellen**. Auf den Preis kommt es
+dabei nicht an: auch ein kostenloses Angebot ist erfasst, wenn es kommerziellen
+Zwecken dient — etwa als Lead-Magnet, im Bundle zu bezahlten Leistungen oder
+werbefinanziert. Jede oeffentlich erreichbare Instanz nennt sichtbar die Erwins
+Enkel GmbH als Urheberin.
+
+Jede Version wird **vier Jahre nach ihrer Veroeffentlichung** automatisch unter
+der [AGPL-3.0](https://www.gnu.org/licenses/agpl-3.0.html) verfuegbar (ihre
+Change Date). Ab dann darf sie jeder auch als Dienst betreiben — dann unter den
+Bedingungen der AGPL, die die Offenlegung des geaenderten Quellcodes verlangt.
+
+Fuer abweichende Vereinbarungen: **hallo@erwins-enkel.dev**. Details in
+[`LICENSE`](./LICENSE), Zusammenfassung auf
+[psa-templates.erwins-enkel.dev/lizenz](https://psa-templates.erwins-enkel.dev/lizenz).
+
+Die Autotask-Variablenkataloge unter `psa/autotask/catalog.*.json` stammen von
+Datto/Kaseya und fallen **nicht** unter diese Lizenz — siehe [`NOTICE.md`](./NOTICE.md).
+
 ---
 
 Ein Projekt der **[Erwins Enkel GmbH](https://www.erwins-enkel.dev)**.

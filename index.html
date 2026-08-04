@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>erwins enkel — PSA Templates</title>
-  <meta name="description" content="Browser-basierter Generator für professionelle E-Mail-Vorlagen in PSA-Systemen wie Autotask. Kein Backend, kein Tracking, alle Daten bleiben im Browser.">
+  <meta name="description" content="Browser-basierter Generator für professionelle E-Mail-Vorlagen in PSA-Systemen wie Autotask. Kein Backend, keine Cookies, Ihre Konfiguration bleibt im Browser.">
   <meta name="keywords" content="PSA, Autotask, Email Templates, MSP, IT-Dienstleister, Ticket-System, PSA Templates">
   <meta name="author" content="Erwins Enkel GmbH">
   <meta name="robots" content="index,follow">
@@ -12,7 +12,7 @@
 
   <meta property="og:type" content="website">
   <meta property="og:title" content="erwins enkel — PSA Templates">
-  <meta property="og:description" content="Browser-basierter Generator für professionelle E-Mail-Vorlagen in PSA-Systemen. Kein Backend, kein Tracking.">
+  <meta property="og:description" content="Browser-basierter Generator für professionelle E-Mail-Vorlagen in PSA-Systemen. Kein Backend, keine Cookies.">
   <meta property="og:url" content="https://psa-templates.erwins-enkel.dev/">
   <meta property="og:locale" content="de_DE">
   <meta property="og:site_name" content="erwins enkel">
@@ -20,16 +20,21 @@
   <meta property="og:image:type" content="image/png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
-  <meta property="og:image:alt" content="erwins enkel — PSA Templates: Professionelle E-Mail-Vorlagen für Autotask, im Browser gebaut, ohne Backend und ohne Tracking.">
+  <meta property="og:image:alt" content="erwins enkel — PSA Templates: Professionelle E-Mail-Vorlagen für Autotask, im Browser gebaut, ohne Backend und ohne Cookies.">
 
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="erwins enkel — PSA Templates">
-  <meta name="twitter:description" content="Browser-basierter Generator für professionelle E-Mail-Vorlagen in PSA-Systemen. Kein Backend, kein Tracking.">
+  <meta name="twitter:description" content="Browser-basierter Generator für professionelle E-Mail-Vorlagen in PSA-Systemen. Kein Backend, keine Cookies.">
   <meta name="twitter:image" content="https://psa-templates.erwins-enkel.dev/og-image.png">
-  <meta name="twitter:image:alt" content="erwins enkel — PSA Templates: Professionelle E-Mail-Vorlagen für Autotask, im Browser gebaut, ohne Backend und ohne Tracking.">
+  <meta name="twitter:image:alt" content="erwins enkel — PSA Templates: Professionelle E-Mail-Vorlagen für Autotask, im Browser gebaut, ohne Backend und ohne Cookies.">
 
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="stylesheet" href="/styles.css">
+
+  <!-- Reichweitenmessung: cookielos, same-origin. Der Bootstrap liegt bewusst
+       in einer eigenen Datei statt inline, damit script-src 'self' genügt. -->
+  <script src="/analytics.js"></script>
+  <script defer src="/_vercel/insights/script.js"></script>
 </head>
 <body>
 
@@ -51,7 +56,7 @@
       <ul>
         <li data-i18n="intro.b1">12 fertige Vorlagen in 4 Stilen — von der Eingangsbestätigung bis zur SLA-Warnung</li>
         <li data-i18n="intro.b2">Autotask-Variablen entstehen sprachrichtig zur gewählten Zone: eine deutsche Instanz bekommt [Ticket: Nummer], eine englische [Ticket: Number]</li>
-        <li data-i18n="intro.b3">Nichts verlässt Ihren Browser — kein Konto, kein Server, auch beim Teilen nicht</li>
+        <li data-i18n="intro.b3">Ihre Konfiguration verlässt den Browser nicht — kein Konto, kein Server, auch beim Teilen nicht</li>
       </ul>
       <button class="btn btn-primary" id="intro-card-dismiss" data-i18n="intro.cta">Loslegen</button>
     </div>

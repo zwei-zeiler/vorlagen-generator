@@ -14,6 +14,8 @@
   "intro.cta": "Loslegen",
   "topbar.exportJson": "Export JSON",
   "topbar.exportJson.title": "Konfiguration als JSON exportieren",
+  "topbar.exportAll": "Alle als ZIP",
+  "topbar.exportAll.title": "Alle Vorlagen als ZIP-Archiv herunterladen (Betreff, HTML und Plain-Text je Vorlage)",
   "topbar.importJson": "Import JSON",
   "topbar.importJson.title": "Konfiguration aus JSON importieren",
   "topbar.reset": "Zurücksetzen",
@@ -177,5 +179,14 @@
   "toast.reset": "Einstellungen zurückgesetzt",
   "toast.retokenized": "{count} Variablen auf {lang} umgestellt",
   "toast.retokenizedUnknown": "{count} Variablen auf {lang} umgestellt — {unknown} unbekannte unverändert",
-  "export.filename": "email-vorlagen-{date}"
+  "export.filename": "email-vorlagen-{date}",
+  "toast.exportedAll": "{count} Vorlagen als ZIP exportiert",
+  "export.zipFilename": "psa-vorlagen-{date}",
+  "zip.readmeTitle": "PSA Templates — Export",
+  "zip.readmeIntro": "Je Vorlage liegt ein Ordner bereit:",
+  "zip.readmeSubject": "betreff.txt  — Betreffzeile für das Autotask-Feld \"Betreff\"",
+  "zip.readmeHtml": "mail.html    — HTML für das Autotask-HTML-Feld",
+  "zip.readmeText": "mail.txt     — Plain-Text für das Autotask-Feld \"Nur Text\"",
+  "zip.readmeNote": "Die [Variablen] sind Autotask-Tokens und bleiben unaufgelöst — Autotask ersetzt sie beim Versand. Die Tokennamen gehören zur Zone {zone} ({lang}).",
+  "zip.readmeIndex": "Enthaltene Vorlagen:"
 }

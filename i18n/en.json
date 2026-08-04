@@ -14,6 +14,8 @@
   "intro.cta": "Get started",
   "topbar.exportJson": "Export JSON",
   "topbar.exportJson.title": "Export configuration as JSON",
+  "topbar.exportAll": "All as ZIP",
+  "topbar.exportAll.title": "Download all templates as a ZIP archive (subject, HTML and plain text per template)",
   "topbar.importJson": "Import JSON",
   "topbar.importJson.title": "Import configuration from JSON",
   "topbar.reset": "Reset",
@@ -177,5 +179,14 @@
   "toast.reset": "Settings reset",
   "toast.retokenized": "{count} variables switched to {lang}",
   "toast.retokenizedUnknown": "{count} variables switched to {lang} — {unknown} unknown left unchanged",
-  "export.filename": "email-templates-{date}"
+  "export.filename": "email-templates-{date}",
+  "toast.exportedAll": "{count} templates exported as ZIP",
+  "export.zipFilename": "psa-templates-{date}",
+  "zip.readmeTitle": "PSA Templates — Export",
+  "zip.readmeIntro": "One folder per template:",
+  "zip.readmeSubject": "betreff.txt  — subject line for the Autotask \"Subject\" field",
+  "zip.readmeHtml": "mail.html    — HTML for the Autotask HTML field",
+  "zip.readmeText": "mail.txt     — plain text for the Autotask \"Text only\" field",
+  "zip.readmeNote": "The [variables] are Autotask tokens and stay unresolved — Autotask replaces them on send. The token names belong to zone {zone} ({lang}).",
+  "zip.readmeIndex": "Templates included:"
 }

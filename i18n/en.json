@@ -97,6 +97,7 @@
   "footer.projectOf": "a project by",
   "footer.imprint": "Imprint",
   "footer.privacy": "Privacy",
+  "footer.license": "License",
   "footer.feedback": "Feedback",
   "modal.shareTitle": "Apply configuration?",
   "modal.shareText": "Do you want to apply the configuration from this share link? Your current configuration will be overwritten.",

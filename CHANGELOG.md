@@ -1,0 +1,56 @@
+# Changelog
+
+## [0.2.0](https://github.com/erwins-enkel/psa-templates/compare/psa-templates-v0.1.0...psa-templates-v0.2.0) (2026-08-04)
+
+
+### Features
+
+* **analytics:** cookielose Reichweitenmessung einbinden ([#47](https://github.com/erwins-enkel/psa-templates/issues/47)) ([04a6a60](https://github.com/erwins-enkel/psa-templates/commit/04a6a60e1e10cd1468242ede001950b6abccfe40)), closes [#33](https://github.com/erwins-enkel/psa-templates/issues/33)
+* **api:** add GET /api/share/[id] serverless function ([735bf53](https://github.com/erwins-enkel/psa-templates/commit/735bf539886e8f899be80d28d31f76bcb2c435ef))
+* **api:** add POST /api/share serverless function with rate limiting ([a6b3da6](https://github.com/erwins-enkel/psa-templates/commit/a6b3da606fb4e93880823792079d573d4063bea8))
+* **autotask:** Zone auswählbar machen und Variablennamen sprachrichtig erzeugen ([#17](https://github.com/erwins-enkel/psa-templates/issues/17)) ([f89ac0f](https://github.com/erwins-enkel/psa-templates/commit/f89ac0f002a55745fc3584ffd46a12304945960b))
+* deploy vorlagen-generator to Vercel (legal + SEO + CSP) ([#2](https://github.com/erwins-enkel/psa-templates/issues/2)) ([168d1d4](https://github.com/erwins-enkel/psa-templates/commit/168d1d4f8ab6afb5ccb6f0511c44a64c29895c00))
+* **export:** alle Vorlagen als ZIP-Archiv herunterladen ([#46](https://github.com/erwins-enkel/psa-templates/issues/46)) ([234aaba](https://github.com/erwins-enkel/psa-templates/commit/234aaba6a52561b7322d66bb72248d8cbaea1b21)), closes [#34](https://github.com/erwins-enkel/psa-templates/issues/34)
+* **i18n:** Oberfläche auf Deutsch und Englisch umschaltbar machen ([#44](https://github.com/erwins-enkel/psa-templates/issues/44)) ([0223805](https://github.com/erwins-enkel/psa-templates/commit/022380530317c516a3a40ccb8469bfa875439df2))
+* initial release — PSA Email Vorlagen Generator ([e929d8e](https://github.com/erwins-enkel/psa-templates/commit/e929d8e4b7b1236e113a1c179b656ef68a864c20))
+* interne Benachrichtigungs-Templates mit Autotask CTA ([5229e48](https://github.com/erwins-enkel/psa-templates/commit/5229e48cb2857757043909fed452a963c6a78814))
+* **render:** add internal-minimal email style with Autotask CTA ([4e96019](https://github.com/erwins-enkel/psa-templates/commit/4e9601978a74134bcf0afc22e079851954824259))
+* **seo:** OG-Vorschaubild 1200x630 anlegen ([#40](https://github.com/erwins-enkel/psa-templates/issues/40)) ([21f409f](https://github.com/erwins-enkel/psa-templates/commit/21f409f03cd52feead7a98143e3b5d7a70e58b98)), closes [#30](https://github.com/erwins-enkel/psa-templates/issues/30)
+* **seo:** Sharing-Metadaten, canonical und Sitemap ergaenzen ([#41](https://github.com/erwins-enkel/psa-templates/issues/41)) ([d474a3c](https://github.com/erwins-enkel/psa-templates/commit/d474a3c266bf61fdc51d324220c9c4c514525c7d)), closes [#24](https://github.com/erwins-enkel/psa-templates/issues/24)
+* shareable config links with 7-day expiry ([72bf4f0](https://github.com/erwins-enkel/psa-templates/commit/72bf4f004a931ac1d4eedb5a71093d5ebb806feb))
+* **share:** add client-side share link creation and loading logic ([e61e6b0](https://github.com/erwins-enkel/psa-templates/commit/e61e6b04b7112eeb14b455932d2dc0088ab67f6a))
+* **templates:** add audience field, autotask design config, and migrateState ([5d64f77](https://github.com/erwins-enkel/psa-templates/commit/5d64f77143774d23d390305ee4a270b2a40af31b))
+* **templates:** add internal feedback template with icon-badge section ([#14](https://github.com/erwins-enkel/psa-templates/issues/14)) ([3e60ebe](https://github.com/erwins-enkel/psa-templates/commit/3e60ebe23a340c9f51432d0457e2fa94aa04599e))
+* **templates:** add internal-notification template with notification type defaults ([efa33a4](https://github.com/erwins-enkel/psa-templates/commit/efa33a4110e00d68d3bd387e84089942f48edc8e))
+* **text:** add plain-text export for Autotask Nur-Text field ([#7](https://github.com/erwins-enkel/psa-templates/issues/7)) ([2a771f2](https://github.com/erwins-enkel/psa-templates/commit/2a771f28df0194e94d903611f85f2c07f557bd7e))
+* **ui:** add Autotask sidebar section with URL and link text inputs ([242fb37](https://github.com/erwins-enkel/psa-templates/commit/242fb37c5b55c61df721636113c5b9ef20c3b278))
+* **ui:** add default logo placeholder and logo toggle ([f565510](https://github.com/erwins-enkel/psa-templates/commit/f5655102d3c29118c3bdc8a6a06a4d6b8b3d0f32))
+* **ui:** add hard style-lock for internal audience templates ([a1d7498](https://github.com/erwins-enkel/psa-templates/commit/a1d7498908b7a9335db4e4ebc3d0a56e7ca64f8c))
+* **ui:** add info tooltip to Preview Text section toggle ([8caed0a](https://github.com/erwins-enkel/psa-templates/commit/8caed0a4d0e55408b0eee61b0c7fae43d21b0c72))
+* **ui:** add Kundenportal section toggle and reorder sidebar ([8756256](https://github.com/erwins-enkel/psa-templates/commit/87562560722bb600bf84a8e946d36de9cdbd23b8))
+* **ui:** add notification-type dropdown with reverse-lookup pre-fill ([b291873](https://github.com/erwins-enkel/psa-templates/commit/b291873c243dfcf4a3c2c6d2a770d69712113de4))
+* **ui:** add Share Link button, popover, and confirm modal HTML ([4fe8152](https://github.com/erwins-enkel/psa-templates/commit/4fe815212358176ca2dbf14248602d1401c9894d))
+* **ui:** add share popover and confirm modal styles ([1a5dc16](https://github.com/erwins-enkel/psa-templates/commit/1a5dc166cde414a0631ea66576980fc490893cfd))
+* **ui:** collapse all panels, add warning badges, add reset button ([0bcd44b](https://github.com/erwins-enkel/psa-templates/commit/0bcd44b5fd5eaef70693ef5ede1cd5e610160f1a))
+* **ui:** group template tabs by audience with section headings ([ebfc795](https://github.com/erwins-enkel/psa-templates/commit/ebfc795eac9f8e31af15bc2a59b6d18a5f6dd86c))
+* **ui:** Intro-Karte beim Erstbesuch ([#48](https://github.com/erwins-enkel/psa-templates/issues/48)) ([690a449](https://github.com/erwins-enkel/psa-templates/commit/690a449aaf87098837c53f9beebb794608058c7c)), closes [#31](https://github.com/erwins-enkel/psa-templates/issues/31)
+* **validation:** add Autotask URL validation with warn-badge ([5a0a875](https://github.com/erwins-enkel/psa-templates/commit/5a0a8759b732fdb5c39025e955c74283489deb57))
+
+
+### Bug Fixes
+
+* **api:** support Vercel KV_* env var naming for Upstash Redis ([7a80ba4](https://github.com/erwins-enkel/psa-templates/commit/7a80ba4e8ec13b1b3c465b707a850022d6f06211))
+* **legal:** Rechtliche Angaben auf die Erwins Enkel GmbH umstellen ([#19](https://github.com/erwins-enkel/psa-templates/issues/19)) ([03d9ce4](https://github.com/erwins-enkel/psa-templates/commit/03d9ce45c7e089a92faf7c187923531d50dff123))
+* **review:** style-lock scope, XSS sanitization, review fixes ([8e40b38](https://github.com/erwins-enkel/psa-templates/commit/8e40b3847b10f75af3db8aad5c9189a2bf5eb47c))
+* **share:** address code review issues ([71c6c16](https://github.com/erwins-enkel/psa-templates/commit/71c6c16aa99ade99719686fb047d69fa4649b6c8))
+* **share:** Link teilen ohne Backend — Konfiguration im URL-Fragment ([#29](https://github.com/erwins-enkel/psa-templates/issues/29)) ([55e2723](https://github.com/erwins-enkel/psa-templates/commit/55e272383b1ee2340afe3540788f1a72b51c483b))
+* **share:** parse share ID from /s/:id path, not just query param ([70f28fe](https://github.com/erwins-enkel/psa-templates/commit/70f28fea93b2d6543d55f0ca7e9e70705d6091c5))
+* **share:** use absolute paths for CSS, JS, and PSA data ([f6d6644](https://github.com/erwins-enkel/psa-templates/commit/f6d66448a896317c7a502ef8a4984882f300ec61))
+* **state:** migrate audience per template id and merge new defaults ([f0f852c](https://github.com/erwins-enkel/psa-templates/commit/f0f852c8ef35b8961424e405f11f0c3681aa5228))
+* **state:** trust DEFAULT_TEMPLATES audience for built-in templates ([25de6dc](https://github.com/erwins-enkel/psa-templates/commit/25de6dc6eeb4250fc2d6703bcf38a0775f6fddc2))
+* **templates:** show feedback example in preview instead of technician note ([#15](https://github.com/erwins-enkel/psa-templates/issues/15)) ([ecd26ba](https://github.com/erwins-enkel/psa-templates/commit/ecd26ba661ea51148f1a1f66a8a491793f206ecc))
+* **templates:** use a BMP badge glyph so it survives Autotask ([#18](https://github.com/erwins-enkel/psa-templates/issues/18)) ([10a8d24](https://github.com/erwins-enkel/psa-templates/commit/10a8d2410e92f6d9553b16698d179bc1e08cbd00))
+* **templates:** wire up subject prefix and fix integration gaps ([dcac64e](https://github.com/erwins-enkel/psa-templates/commit/dcac64e0ca861516913b22e4d5b3e17aebbd767e))
+* **ui:** correct umlaut in confirm modal button text ([3786a49](https://github.com/erwins-enkel/psa-templates/commit/3786a49bc30aeb7fac56b6b367c32e5c8c65c9de))
+* **ui:** force template-group rows to full width ([35b7246](https://github.com/erwins-enkel/psa-templates/commit/35b7246bf7ccffad4666f12ccce6a28a32e901e9))
+* **ui:** tote öffentliche Links im Kopf und Fuß ersetzen ([#38](https://github.com/erwins-enkel/psa-templates/issues/38)) ([8f13e3c](https://github.com/erwins-enkel/psa-templates/commit/8f13e3c19d49191ebf3c8364841e6f10919bc5da)), closes [#22](https://github.com/erwins-enkel/psa-templates/issues/22)

@@ -97,6 +97,7 @@
   "footer.projectOf": "ein Projekt der",
   "footer.imprint": "Impressum",
   "footer.privacy": "Datenschutz",
+  "footer.license": "Lizenz",
   "footer.feedback": "Feedback",
   "modal.shareTitle": "Konfiguration übernehmen?",
   "modal.shareText": "Möchten Sie die Konfiguration aus diesem Share-Link übernehmen? Ihre aktuelle Konfiguration wird dabei überschrieben.",

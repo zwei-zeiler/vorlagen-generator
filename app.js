@@ -1,5 +1,10 @@
 /* ============================================
    erwins enkel — PSA Templates
+   Copyright (c) 2026 Erwins Enkel GmbH
+   Business Source License 1.1 — siehe LICENSE.
+   Source-available, nicht Open Source: kommerzielle
+   Bereitstellung an Dritte braucht eine Vereinbarung,
+   hallo@erwins-enkel.dev
    ============================================ */
 
 (function () {

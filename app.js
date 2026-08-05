@@ -23,6 +23,10 @@
   const DEFAULT_UI_LANG = 'de';
   let strings = {};
 
+  // Geladene Bundles je Sprache. Oberflächen- und Vorlagensprache dürfen
+  // auseinanderfallen; sind sie gleich, spart der Cache den zweiten Abruf.
+  const locales = Object.create(null);
+
   function normalizeUiLang(lang) {
     return UI_LANGS.includes(lang) ? lang : DEFAULT_UI_LANG;
   }
@@ -48,10 +52,12 @@
   }
 
   async function loadLocale(lang) {
+    if (locales[lang]) return locales[lang];
     try {
       const resp = await fetch('/i18n/' + lang + '.json');
       if (!resp.ok) throw new Error('HTTP ' + resp.status);
-      return await resp.json();
+      locales[lang] = await resp.json();
+      return locales[lang];
     } catch (e) {
       console.warn('Could not load locale ' + lang + ':', e);
       return null;
@@ -62,6 +68,39 @@
   // fehlende Übersetzung soll auffallen, nicht verschwinden.
   function t(key, params) {
     let out = Object.prototype.hasOwnProperty.call(strings, key) ? strings[key] : key;
+    if (params) {
+      for (const p of Object.keys(params)) {
+        out = out.split('{' + p + '}').join(params[p]);
+      }
+    }
+    return out;
+  }
+
+  // ── Vorlagensprache ──
+  // Dritte Achse neben Oberflächen- und Variablensprache: die Sprache der
+  // erzeugten E-Mail-Texte. Eine englische Vorlage in einer deutschen
+  // Autotask-Zone muss englischen Fließtext mit *deutschen* Variablennamen
+  // erzeugen — Prosa und Tokens folgen verschiedenen Sprachen.
+  const TEMPLATE_LANGS = ['de', 'en'];
+
+  function normalizeTemplateLang(lang) {
+    return TEMPLATE_LANGS.includes(lang) ? lang : null;
+  }
+
+  async function ensureTemplateLocale(lang) {
+    return !!(await loadLocale(lang));
+  }
+
+  function ttIn(key, lang) {
+    const bundle = locales[lang];
+    return bundle && Object.prototype.hasOwnProperty.call(bundle, key) ? bundle[key] : '';
+  }
+
+  // Anders als t() fällt tt() auf '' zurück statt auf den Schlüssel. Eine
+  // fehlende Übersetzung in der Sidebar ist ein Schönheitsfehler; in einer
+  // Kundenmail stünde sonst wörtlich „tpl.ticket-note.subject" beim Empfänger.
+  function tt(key, params) {
+    let out = ttIn(key, templateLang());
     if (params) {
       for (const p of Object.keys(params)) {
         out = out.split('{' + p + '}').join(params[p]);
@@ -96,6 +135,9 @@
     renderTemplateTabs();
     renderSectionToggles();
     renderTemplateConfig();
+    // Nur der Hinweistext wechselt mit der Oberflaechensprache — die
+    // Vorlagensprache selbst bleibt, wo sie steht.
+    updateTemplateLangSwitch();
     updateSidebarBadges();
   }
 
@@ -214,6 +256,45 @@
     return AUTOTASK_ZONES.find(z => z.id === id) || AUTOTASK_ZONES[0];
   }
 
+  // Spanische Zonen fallen auf Englisch zurück: spanische Vorlagentexte gibt
+  // es nicht. Abgeleitet wird über .lang, nicht über Zonen-IDs — ww18 und prde
+  // sind deutsch, ww12 und pres spanisch.
+  function defaultTemplateLangForZone(zoneId) {
+    return zoneById(zoneId).lang === 'de' ? 'de' : 'en';
+  }
+
+  // Die einzige Stelle, die entscheidet, welche Vorlagensprache eine Nutzlast
+  // trägt — benutzt von detectTemplateLang(), migrateState() und darüber auch
+  // von applyConfig(), damit die drei nicht auseinanderlaufen können.
+  function resolveTemplateLangFor(design, varSchema) {
+    const explicit = normalizeTemplateLang(design && design.templateLang);
+    if (explicit) return explicit;
+    // Jeder Stand vor VAR_SCHEMA 4 trägt deutsche Texte, unabhängig von seiner
+    // Zone. Ihn über die Zone aufzulösen tauschte gespeicherte deutsche Texte
+    // gegen englische Defaults. Die 4 steht bewusst als Literal: sie bezeichnet
+    // genau diesen Migrationsschritt, nicht den jeweils aktuellen Stand.
+    if ((varSchema || 0) < 4) return 'de';
+    return defaultTemplateLangForZone(design && design.autotaskZone);
+  }
+
+  function templateLang() {
+    return normalizeTemplateLang(state.design.templateLang) ||
+      defaultTemplateLangForZone(state.design.autotaskZone);
+  }
+
+  // Roh-Vorablesen wie detectUiLang(), damit init() das Bundle im selben
+  // Promise.all holen kann. Reine Optimierung: trifft es daneben, holt
+  // applyLocaleDefaults() das richtige nach.
+  function detectTemplateLang() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+      if (saved && saved.design) return resolveTemplateLangFor(saved.design, saved.varSchema);
+    } catch {
+      // Ein kaputter Stand darf die Sprachwahl nicht sprengen.
+    }
+    return defaultTemplateLangForZone(DEFAULT_DESIGN.autotaskZone);
+  }
+
   function zoneUrlFor(zone) {
     return 'https://' + zone.id + '.autotask.net/Mvc/ServiceDesk/TicketDetail.mvc?ticketId={id}';
   }
@@ -245,40 +326,47 @@
   let _cancelModal = function () {};
 
   // ── Default Design System ──
+  // Nur sprachneutrale Felder. Die zehn Platzhalter-Texte (Firmenname, Anschrift,
+  // Rechtsangaben, Buttontexte) hängen an der Vorlagensprache und stehen in den
+  // Locale-Dateien unter design.* — applyLocaleDefaults() setzt sie ein.
   const DEFAULT_DESIGN = {
     primaryColor: '#2c3e50',
     textColor: '#333333',
     accentColor: '#888888',
     logoUrl: '',
     logoEnabled: true,
-    company: 'Muster GmbH',
-    claim: 'Ihr IT-Dienstleister',
-    address: 'Musterstraße 1, 10115 Berlin',
     phone: '+49 30 123 456 789',
     web: 'https://www.example.com',
     certs: '',
     font: 'Arial,Helvetica,sans-serif',
-    legalCeo: 'Max Mustermann',
-    legalCourt: 'AG Berlin-Charlottenburg',
-    legalRegNr: 'HRB 12345 B',
-    legalVatId: 'DE123456789',
     legalImprintUrl: 'https://www.example.com/impressum/',
     legalPrivacyUrl: 'https://www.example.com/datenschutz/',
     bookingUrl: '',
-    bookingText: 'Jetzt Termin buchen',
     bookingActive: false,
     portalUrl: '',
-    portalText: 'Kundenportal öffnen',
     autotaskZone: 'ww18',
     // Passend zur Default-Zone vorbelegt. Gespeicherte Stände überschreiben das,
     // eine leer gelassene URL bleibt also leer.
     autotaskUrl: zoneUrlFor(AUTOTASK_ZONES[0]),
-    autotaskLinkText: 'In Autotask öffnen',
     // Sprache der Bedienoberfläche. Liegt hier, damit saveToLocalStorage() sie
     // ohne Sonderweg mitschreibt — applyConfig() nimmt sie aber bewusst NICHT
     // aus einer geladenen Nutzlast, siehe dort.
-    uiLang: DEFAULT_UI_LANG
+    uiLang: DEFAULT_UI_LANG,
+    // null heißt „folgt der Zone". Der Umschalter setzt hier eine feste Sprache;
+    // ab dann bleibt sie auch über einen Zonenwechsel hinweg stehen.
+    templateLang: null
   };
+
+  const DESIGN_TEXT_KEYS = [
+    'company', 'claim', 'address', 'legalCeo', 'legalCourt', 'legalRegNr',
+    'legalVatId', 'bookingText', 'portalText', 'autotaskLinkText'
+  ];
+
+  function designTextDefaults(lang) {
+    const out = {};
+    for (const key of DESIGN_TEXT_KEYS) out[key] = ttIn('design.' + key, lang);
+    return out;
+  }
 
   // ── Style Definitions ──
   const STYLES = [
@@ -300,386 +388,319 @@
   const DEFAULT_BADGE_GLYPH = '⚡';
   const LEGACY_BADGE_GLYPH = '\u{1F4A1}';
 
-  // ── Notification Type Defaults ──
-  const NOTIFICATION_TYPE_DEFAULTS = {
-    queue: {
-      subjectPrefix: '[Queue]',
-      previewText: 'Neues Ticket in der Queue.',
-      intro: 'Ein neues Ticket ist in der Queue eingegangen und wartet auf Zuweisung.\n\nTitel: [Ticket: Titel]\nPriorität: [Ticket: Priorität]\nKunde: [Firma: Name]'
-    },
-    assigned: {
-      subjectPrefix: '[Assigned]',
-      previewText: 'Ticket wurde dir zugewiesen.',
-      intro: 'Hallo [Mitarbeiter: Vorname],\n\ndir wurde ein Ticket zugewiesen.\n\nTitel: [Ticket: Titel]\nPriorität: [Ticket: Priorität]\nKunde: [Firma: Name]'
-    },
-    sla: {
-      subjectPrefix: '[SLA]',
-      previewText: 'SLA-Warnung: Ticket nähert sich Fälligkeit.',
-      intro: 'Achtung: Das folgende Ticket nähert sich der SLA-Fälligkeit.\n\nTitel: [Ticket: Titel]\nFälligkeit: [Ticket: Fälligkeitsdatum]\nPriorität: [Ticket: Priorität]'
-    }
-  };
+  // ── Notification Types ──
+  // Betreff, Vorschautext und Einleitung der Vorlage internal-notification
+  // hängen am Typ, nicht an der Vorlage — sie stehen unter notify.* in den
+  // Locale-Dateien.
+  const NOTIFICATION_TYPES = ['queue', 'assigned', 'sla'];
 
-  function buildNotificationSubject(type) {
-    const prefix = NOTIFICATION_TYPE_DEFAULTS[type]?.subjectPrefix || '[Queue]';
-    return `${prefix} [Ticket: Nummer]: [Ticket: Titel]`;
+  function notificationType(type) {
+    return NOTIFICATION_TYPES.includes(type) ? type : 'queue';
   }
 
-  // ── Default Templates ──
-  const DEFAULT_TEMPLATES = [
+  // ── Materialisierung ──
+  // Locale-Texte tragen Variablen als {{kuratierter.schlüssel}}. Erst hier
+  // entsteht daraus der Token der Zonensprache — deshalb darf in keiner
+  // Locale-Datei ein fertiges [Satz: Feld] stehen.
+  const TOKEN_PLACEHOLDER_RE = /\{\{([^}]+)\}\}/g;
+
+  function materializeTokens(text, tokenLang) {
+    // Unbekannter Schlüssel bleibt als {{…}} sichtbar stehen, statt still zu
+    // verschwinden — in der Vorschau fällt das sofort auf.
+    return String(text || '').replace(TOKEN_PLACEHOLDER_RE, (whole, key) =>
+      curatedList().some(v => v.key === key) ? tokenIn(key, tokenLang) : whole);
+  }
+
+  function notificationDefaults(type, tplLang, tokenLang) {
+    const lang = tplLang || templateLang();
+    const tok = tokenLang || varLang();
+    const nt = notificationType(type);
+    return {
+      subjectPrefix: ttIn('notify.' + nt + '.subjectPrefix', lang),
+      previewText: materializeTokens(ttIn('notify.' + nt + '.previewText', lang), tok),
+      intro: materializeTokens(ttIn('notify.' + nt + '.intro', lang), tok)
+    };
+  }
+
+  function buildNotificationSubject(type, tplLang, tokenLang) {
+    const lang = tplLang || templateLang();
+    const tok = tokenLang || varLang();
+    const pattern = ttIn('notify.subjectPattern', lang);
+    const prefix = ttIn('notify.' + notificationType(type) + '.subjectPrefix', lang);
+    return materializeTokens(pattern.split('{prefix}').join(prefix), tok);
+  }
+
+  // ── Template Structure ──
+  // Nur Struktur: alle Texte liegen unter tpl.<id>.* in den Locale-Dateien und
+  // kommen über defaultTemplates() dazu.
+  const TEMPLATE_TEXT_FIELDS = [
+    'previewTextVar', 'messageBodyVar', 'ctaText', 'ctaLink', 'footerText',
+    'customHeading', 'customIntro'
+  ];
+
+  // Vorlagen mit eigenen Vorschau-Beispielen: die globalen Beispiele aus
+  // curated.json passen dort nicht. Nicht nutzer-editierbar.
+  const PREVIEW_EXAMPLE_KEYS = {
+    'ticket-feedback-internal': ['ticket.noteTitle', 'ticket.noteDescription']
+  };
+
+  const TEMPLATE_SPECS = [
     {
       id: 'ticket-note',
-      name: 'Ticket-Note an Kunde',
       audience: 'customer',
-      subject: '[Ticket: Notiztitel] / [Ticket: Nummer]',
       sections: {
-        previewText: true,
-        header: true,
-        ticketInfo: true,
-        messageBody: true,
-        ctaButton: true,
-        bookingButton: false,
-        kundenportal: false,
-        signature: true,
-        footer: true,
-        legalFooter: true
-      },
-      config: {
-        previewTextVar: '[Ticket: Beschreibung der Notiz]',
-        messageBodyVar: '[Ticket: Beschreibung der Notiz]',
-        ctaText: 'Ticket im Portal ansehen',
-        ctaLink: '[Ticket: Nummer (mit Link)]',
-        footerText: 'Diese Nachricht bezieht sich auf Ticket [Ticket: Nummer]. Bitte antworten Sie direkt auf diese E-Mail oder nutzen Sie das Kundenportal.',
-        customHeading: '',
-        customIntro: '',
-        headerColorOverride: ''
+        previewText: true, header: true, ticketInfo: true, messageBody: true,
+        ctaButton: true, bookingButton: false, kundenportal: false,
+        signature: true, footer: true, legalFooter: true
       }
     },
     {
       id: 'ticket-accepted',
-      name: 'Ticket angenommen',
       audience: 'customer',
-      subject: 'Ihr Ticket [Ticket: Nummer] wird bearbeitet',
       sections: {
-        previewText: true,
-        header: true,
-        ticketInfo: true,
-        messageBody: true,
-        ctaButton: true,
-        bookingButton: false,
-        kundenportal: false,
-        signature: true,
-        footer: true,
-        legalFooter: true
-      },
-      config: {
-        previewTextVar: 'Ihr Ticket wurde angenommen und wird bearbeitet.',
-        messageBodyVar: '',
-        ctaText: 'Ticket im Portal ansehen',
-        ctaLink: '[Ticket: Nummer (mit Link)]',
-        footerText: 'Diese Nachricht bezieht sich auf Ticket [Ticket: Nummer]. Bitte antworten Sie direkt auf diese E-Mail oder nutzen Sie das Kundenportal.',
-        customHeading: 'Ihr Ticket wird bearbeitet',
-        customIntro: 'Guten Tag [Kontakt: Vorname] [Kontakt: Nachname],\n\nIhr Ticket wurde von unserem Team angenommen und wird nun bearbeitet.\n\nUnser Techniker [Diverses: Initiator - Name] kümmert sich um Ihr Anliegen. Wir melden uns bei Ihnen, sobald wir weitere Informationen haben.',
-        headerColorOverride: ''
+        previewText: true, header: true, ticketInfo: true, messageBody: true,
+        ctaButton: true, bookingButton: false, kundenportal: false,
+        signature: true, footer: true, legalFooter: true
       }
     },
     {
       id: 'ticket-confirmation',
-      name: 'Eingangsbestätigung',
       audience: 'customer',
-      subject: 'Eingangsbestätigung: [Ticket: Titel] / [Ticket: Nummer]',
       sections: {
-        previewText: true,
-        header: true,
-        ticketInfo: true,
-        messageBody: true,
-        ctaButton: true,
-        bookingButton: false,
-        kundenportal: false,
-        signature: false,
-        footer: true,
-        legalFooter: true
-      },
-      config: {
-        previewTextVar: 'Wir haben Ihre Anfrage erhalten und ein Ticket erstellt.',
-        messageBodyVar: '',
-        ctaText: 'Ticket im Portal ansehen',
-        ctaLink: '[Ticket: Nummer (mit Link)]',
-        footerText: 'Diese Nachricht bezieht sich auf Ticket [Ticket: Nummer]. Bitte antworten Sie direkt auf diese E-Mail oder nutzen Sie das Kundenportal.',
-        customHeading: 'Wir haben Ihre Anfrage erhalten',
-        customIntro: 'Guten Tag [Kontakt: Vorname] [Kontakt: Nachname],\n\nvielen Dank für Ihre Nachricht. Wir haben Ihre Anfrage erhalten und unter der Ticketnummer [Ticket: Nummer] erfasst.\n\nUnser Team wird sich in Kürze mit Ihnen in Verbindung setzen.',
-        headerColorOverride: ''
+        previewText: true, header: true, ticketInfo: true, messageBody: true,
+        ctaButton: true, bookingButton: false, kundenportal: false,
+        signature: false, footer: true, legalFooter: true
       }
     },
     {
       id: 'ticket-closed',
-      name: 'Ticket geschlossen',
       audience: 'customer',
-      subject: 'Ihr Ticket [Ticket: Nummer] wurde gelöst',
       sections: {
-        previewText: true,
-        header: true,
-        ticketInfo: true,
-        messageBody: true,
-        ctaButton: true,
-        bookingButton: false,
-        kundenportal: false,
-        signature: true,
-        footer: true,
-        legalFooter: true
-      },
-      config: {
-        previewTextVar: 'Ihr Ticket wurde erfolgreich gelöst.',
-        messageBodyVar: '',
-        ctaText: 'Feedback geben',
-        ctaLink: '[Ticket: Nummer (mit Link)]',
-        footerText: 'Diese Nachricht bezieht sich auf Ticket [Ticket: Nummer]. Bitte antworten Sie direkt auf diese E-Mail oder nutzen Sie das Kundenportal.',
-        customHeading: 'Ihr Ticket wurde gelöst',
-        customIntro: 'Guten Tag [Kontakt: Vorname] [Kontakt: Nachname],\n\nIhr Ticket [Ticket: Nummer] wurde bearbeitet und als gelöst markiert.\n\nZusammenfassung: [Ticket: Titel]\n\nLösung:\n[Ticket: Beschreibung der Notiz]\n\nSollte das Problem erneut auftreten oder Sie weitere Fragen haben, können Sie jederzeit auf diese E-Mail antworten oder ein neues Ticket erstellen.\n\nWir freuen uns über Ihr Feedback — nutzen Sie dafür gerne den Button unten.',
-        headerColorOverride: ''
+        previewText: true, header: true, ticketInfo: true, messageBody: true,
+        ctaButton: true, bookingButton: false, kundenportal: false,
+        signature: true, footer: true, legalFooter: true
       }
     },
     {
       id: 'ticket-escalated',
-      name: 'Ticket eskaliert',
       audience: 'customer',
-      subject: 'Ihr Ticket [Ticket: Nummer] wurde eskaliert',
       sections: {
-        previewText: true,
-        header: true,
-        ticketInfo: true,
-        messageBody: true,
-        ctaButton: true,
-        bookingButton: false,
-        kundenportal: false,
-        signature: true,
-        footer: true,
-        legalFooter: true
-      },
-      config: {
-        previewTextVar: 'Ihr Ticket wurde an einen Spezialisten übergeben.',
-        messageBodyVar: '[Ticket: Beschreibung der Notiz]',
-        ctaText: 'Ticket im Portal ansehen',
-        ctaLink: '[Ticket: Nummer (mit Link)]',
-        footerText: 'Diese Nachricht bezieht sich auf Ticket [Ticket: Nummer]. Bitte antworten Sie direkt auf diese E-Mail oder nutzen Sie das Kundenportal.',
-        customHeading: 'Ihr Ticket wurde an einen Spezialisten übergeben',
-        customIntro: 'Guten Tag [Kontakt: Vorname] [Kontakt: Nachname],\n\num Ihr Anliegen bestmöglich zu lösen, haben wir Ihr Ticket an einen spezialisierten Techniker übergeben.\n\nGrund der Eskalation:',
-        headerColorOverride: ''
+        previewText: true, header: true, ticketInfo: true, messageBody: true,
+        ctaButton: true, bookingButton: false, kundenportal: false,
+        signature: true, footer: true, legalFooter: true
       }
     },
     {
       id: 'ticket-feedback-request',
-      name: 'Rückfrage an Kunde',
       audience: 'customer',
-      subject: 'Rückfrage zu Ihrem Ticket [Ticket: Nummer]',
       sections: {
-        previewText: true,
-        header: true,
-        ticketInfo: true,
-        messageBody: true,
-        ctaButton: true,
-        bookingButton: false,
-        kundenportal: false,
-        signature: true,
-        footer: true,
-        legalFooter: true
-      },
-      config: {
-        previewTextVar: 'Wir benötigen Ihre Rückmeldung zu Ihrem Ticket.',
-        messageBodyVar: '[Ticket: Beschreibung der Notiz]',
-        ctaText: 'Jetzt antworten',
-        ctaLink: '[Ticket: Nummer (mit Link)]',
-        footerText: 'Bitte beachten Sie: Ihr Ticket [Ticket: Nummer] wartet auf Ihre Rückmeldung. Ohne Ihre Antwort können wir die Bearbeitung nicht fortsetzen.',
-        customHeading: 'Wir benötigen Ihre Rückmeldung',
-        customIntro: 'Guten Tag [Kontakt: Vorname] [Kontakt: Nachname],\n\nzur weiteren Bearbeitung Ihres Tickets benötigen wir eine Rückmeldung von Ihnen.\n\nUnsere Frage:',
-        headerColorOverride: ''
+        previewText: true, header: true, ticketInfo: true, messageBody: true,
+        ctaButton: true, bookingButton: false, kundenportal: false,
+        signature: true, footer: true, legalFooter: true
       }
     },
     {
       id: 'sla-warning',
-      name: 'SLA-Warnung',
       audience: 'customer',
-      subject: 'Update zu Ihrem Ticket [Ticket: Nummer]',
       sections: {
-        previewText: true,
-        header: true,
-        ticketInfo: true,
-        messageBody: true,
-        ctaButton: true,
-        bookingButton: false,
-        kundenportal: false,
-        signature: true,
-        footer: true,
-        legalFooter: true
-      },
-      config: {
-        previewTextVar: 'Wir arbeiten mit Hochdruck an Ihrem Ticket.',
-        messageBodyVar: '',
-        ctaText: 'Ticket im Portal ansehen',
-        ctaLink: '[Ticket: Nummer (mit Link)]',
-        footerText: 'Diese Nachricht bezieht sich auf Ticket [Ticket: Nummer]. Bitte antworten Sie direkt auf diese E-Mail oder nutzen Sie das Kundenportal.',
-        customHeading: 'Wir arbeiten mit Hochdruck an Ihrem Ticket',
-        customIntro: 'Guten Tag [Kontakt: Vorname] [Kontakt: Nachname],\n\nwir möchten Sie proaktiv über den Stand Ihres Tickets informieren.\n\nIhr Anliegen „[Ticket: Titel]" hat für uns hohe Priorität. Unser Team arbeitet intensiv an einer Lösung und wir haben Ihr Ticket entsprechend priorisiert.\n\nFälligkeitsdatum: [Ticket: Fälligkeitsdatum]\n\nSie können den aktuellen Status jederzeit im Kundenportal einsehen. Wir melden uns umgehend, sobald wir weitere Informationen haben.',
-        headerColorOverride: ''
+        previewText: true, header: true, ticketInfo: true, messageBody: true,
+        ctaButton: true, bookingButton: false, kundenportal: false,
+        signature: true, footer: true, legalFooter: true
       }
     },
     {
       id: 'ticket-handover',
-      name: 'Ticket-Übergabe (intern)',
       audience: 'internal',
-      subject: '[Intern] Ticket-Übergabe: [Ticket: Titel] / [Ticket: Nummer]',
+      headerColorOverride: '#4a4a4a',
       sections: {
-        previewText: true,
-        header: true,
-        ticketInfo: true,
-        messageBody: true,
-        ctaButton: false,
-        bookingButton: false,
-        kundenportal: false,
-        signature: true,
-        footer: true,
-        legalFooter: false
-      },
-      config: {
-        previewTextVar: 'Ticket-Übergabe: [Ticket: Titel]',
-        messageBodyVar: '[Ticket: Beschreibung der Notiz]',
-        ctaText: '',
-        ctaLink: '',
-        footerText: 'Interne Mitteilung — [Diverses: Ihr Firmenname] | Ticket [Ticket: Nummer]',
-        customHeading: 'Ticket-Übergabe',
-        customIntro: 'Hallo [Mitarbeiter: Vorname],\n\nfolgendes Ticket wird an dich übergeben.\n\nKunde: [Kontakt: Vorname] [Kontakt: Nachname] ([Firma: Name])\nErstellt am: [Ticket: Erstellungsdatum]\n\nBisherige Bearbeitung:',
-        headerColorOverride: '#4a4a4a'
+        previewText: true, header: true, ticketInfo: true, messageBody: true,
+        ctaButton: false, bookingButton: false, kundenportal: false,
+        signature: true, footer: true, legalFooter: false
       }
     },
     {
       id: 'ticket-survey',
-      name: 'Kundenzufriedenheits-Umfrage',
       audience: 'customer',
-      subject: 'Wie war unser Service? Ticket [Ticket: Nummer]',
       sections: {
-        previewText: true,
-        header: true,
-        ticketInfo: true,
-        messageBody: true,
-        ctaButton: true,
-        bookingButton: false,
-        kundenportal: false,
-        signature: false,
-        footer: true,
-        legalFooter: true
-      },
-      config: {
-        previewTextVar: 'Wir würden uns über Ihr Feedback freuen.',
-        messageBodyVar: '',
-        ctaText: 'Bewerten Sie unseren Service',
-        ctaLink: '[Ticket: Nummer (mit Link)]',
-        footerText: 'Diese Nachricht bezieht sich auf das abgeschlossene Ticket [Ticket: Nummer]. Vielen Dank für Ihr Vertrauen in [Diverses: Ihr Firmenname].',
-        customHeading: 'Wie war unser Service?',
-        customIntro: 'Guten Tag [Kontakt: Vorname] [Kontakt: Nachname],\n\nIhr Ticket [Ticket: Nummer] „[Ticket: Titel]" wurde kürzlich abgeschlossen.\n\nVielen Dank, dass Sie sich an uns gewandt haben. Ihre Meinung ist uns wichtig — sie hilft uns, unseren Service stetig zu verbessern.\n\nWir würden uns freuen, wenn Sie sich einen kurzen Moment Zeit nehmen, um unseren Service zu bewerten.',
-        headerColorOverride: ''
+        previewText: true, header: true, ticketInfo: true, messageBody: true,
+        ctaButton: true, bookingButton: false, kundenportal: false,
+        signature: false, footer: true, legalFooter: true
       }
     },
     {
       id: 'ticket-booking',
-      name: 'Termin zum Ticket buchen',
       audience: 'customer',
-      subject: 'Terminvereinbarung zu Ihrem Ticket [Ticket: Nummer]',
       sections: {
-        previewText: true,
-        header: true,
-        ticketInfo: true,
-        messageBody: true,
-        ctaButton: false,
-        bookingButton: true,
-        kundenportal: false,
-        signature: true,
-        footer: true,
-        legalFooter: true
-      },
-      config: {
-        previewTextVar: 'Wir möchten einen Termin mit Ihnen vereinbaren.',
-        messageBodyVar: '[Ticket: Beschreibung der Notiz]',
-        ctaText: 'Ticket im Portal ansehen',
-        ctaLink: '[Ticket: Nummer (mit Link)]',
-        footerText: 'Diese Nachricht bezieht sich auf Ticket [Ticket: Nummer]. Bitte antworten Sie direkt auf diese E-Mail oder nutzen Sie das Kundenportal.',
-        customHeading: 'Terminvereinbarung zu Ihrem Ticket',
-        customIntro: 'Guten Tag [Kontakt: Vorname] [Kontakt: Nachname],\n\nfür die weitere Bearbeitung Ihres Tickets möchten wir einen Termin mit Ihnen vereinbaren.\n\nBitte wählen Sie über den folgenden Link einen für Sie passenden Termin aus — ob Remote-Session oder Vor-Ort-Termin, wir richten uns nach Ihnen.\n\nZusätzliche Hinweise:',
-        headerColorOverride: ''
+        previewText: true, header: true, ticketInfo: true, messageBody: true,
+        ctaButton: false, bookingButton: true, kundenportal: false,
+        signature: true, footer: true, legalFooter: true
       }
     },
     {
       id: 'internal-notification',
-      name: 'Internal Notification',
       audience: 'internal',
-      subject: buildNotificationSubject('queue'),
+      notificationType: 'queue',
       sections: {
-        previewText: true,
-        header: false,
-        ticketInfo: false,
-        messageBody: true,
-        ctaButton: true,
-        bookingButton: false,
-        kundenportal: false,
-        signature: false,
-        footer: false,
-        legalFooter: false
-      },
-      config: {
-        notificationType: 'queue',
-        previewTextVar: NOTIFICATION_TYPE_DEFAULTS.queue.previewText,
-        messageBodyVar: '',
-        ctaText: '',
-        ctaLink: '',
-        footerText: '',
-        customHeading: '[Ticket: Nummer]',
-        customIntro: NOTIFICATION_TYPE_DEFAULTS.queue.intro,
-        headerColorOverride: ''
+        previewText: true, header: false, ticketInfo: false, messageBody: true,
+        ctaButton: true, bookingButton: false, kundenportal: false,
+        signature: false, footer: false, legalFooter: false
       }
     },
     {
       id: 'ticket-feedback-internal',
-      name: 'Feedback an Mitarbeiter (intern)',
       audience: 'internal',
-      subject: '[Feedback] Ticket [Ticket: Nummer]: [Ticket: Titel]',
-      // Die globalen Beispiele zeigen die Arbeitsnotiz des Technikers. Hier
-      // trägt dieselbe Variable das Feedback an ihn — sonst liest sich die
-      // Vorschau genau falsch herum.
-      previewExamples: {
-        'ticket.noteTitle': 'Feedback zu deiner Ticket-Bearbeitung',
-        'ticket.noteDescription': 'Vielen Dank für deine Arbeit an diesem Ticket. Eine Sache hätte ich noch: Bitte füge künftig immer den IT-Glue-Link mit ein, wenn du etwas dokumentierst — und bei diesem Ticket gerne noch nachträglich. So hat ein Kollege, der in dein Ticket schaut, direkt die passende Dokumentation zur Hand. Und der Kunde sieht, dass zum Wert, den er bekommt, auch die Doku gehört.'
-      },
+      headerColorOverride: '#4a4a4a',
+      badgeGlyph: DEFAULT_BADGE_GLYPH,
       sections: {
-        previewText: true,
-        header: true,
-        ticketInfo: true,
-        iconBadge: true,
-        messageBody: true,
-        ctaButton: false,
-        bookingButton: false,
-        kundenportal: false,
-        signature: true,
-        footer: true,
-        legalFooter: false
-      },
-      config: {
-        // Kein fester Prosatext: Überschrift und Einleitung bleiben leer,
-        // der Inhalt kommt vollständig aus der Autotask-Formularvorlage.
-        previewTextVar: '[Ticket: Notiztitel]',
-        messageBodyVar: '[Ticket: Beschreibung der Notiz]',
-        badgeGlyph: DEFAULT_BADGE_GLYPH,
-        ctaText: '',
-        ctaLink: '',
-        footerText: 'Interne Mitteilung — [Diverses: Ihr Firmenname] | Ticket [Ticket: Nummer]',
-        customHeading: '',
-        customIntro: '',
-        headerColorOverride: '#4a4a4a'
+        previewText: true, header: true, ticketInfo: true, iconBadge: true,
+        messageBody: true, ctaButton: false, bookingButton: false,
+        kundenportal: false, signature: true, footer: true, legalFooter: false
       }
     }
   ];
 
+  const SPEC_BY_ID = new Map(TEMPLATE_SPECS.map(spec => [spec.id, spec]));
+
+  function previewExamplesFor(id, lang) {
+    const keys = PREVIEW_EXAMPLE_KEYS[id];
+    if (!keys) return undefined;
+    const examples = {};
+    for (const key of keys) {
+      examples[key] = ttIn('tpl.' + id + '.previewExample.' + key, lang);
+    }
+    return examples;
+  }
+
+  // Baut die 12 Vorlagen aus Struktur + Locale. Gibt null zurück, wenn das
+  // Bundle der Vorlagensprache fehlt: zwölf Vorlagen aus lauter leeren Feldern
+  // landeten sonst in localStorage und überlebten den Netzwerkfehler.
+  function defaultTemplates(tplLang, tokenLang) {
+    const lang = tplLang || templateLang();
+    const tok = tokenLang || varLang();
+    if (!locales[lang]) return null;
+
+    return TEMPLATE_SPECS.map(spec => {
+      const text = (field) => materializeTokens(ttIn('tpl.' + spec.id + '.' + field, lang), tok);
+
+      const config = {};
+      for (const field of TEMPLATE_TEXT_FIELDS) config[field] = text(field);
+      config.headerColorOverride = spec.headerColorOverride || '';
+      if (spec.badgeGlyph) config.badgeGlyph = spec.badgeGlyph;
+
+      let subject = text('subject');
+      if (spec.notificationType) {
+        const defaults = notificationDefaults(spec.notificationType, lang, tok);
+        config.notificationType = spec.notificationType;
+        config.previewTextVar = defaults.previewText;
+        config.customIntro = defaults.intro;
+        subject = buildNotificationSubject(spec.notificationType, lang, tok);
+      }
+
+      return {
+        id: spec.id,
+        name: ttIn('tpl.' + spec.id + '.name', lang),
+        audience: spec.audience,
+        subject: subject,
+        previewExamples: previewExamplesFor(spec.id, lang),
+        sections: { ...spec.sections },
+        config: config
+      };
+    });
+  }
+
+  // ── Default-Erkennung ──
+  // Beim Sprachwechsel und beim Wechsel des Benachrichtigungstyps darf nur
+  // überschrieben werden, was noch einen bekannten Default trägt. Verglichen
+  // wird gegen alle Kombinationen aus Vorlagen- und Zonensprache: ein Stand
+  // kann in einer anderen Zone angelegt worden sein, und retokenizeTemplates()
+  // lässt Tokens stehen, die es nicht kennt.
+  const TOKEN_LANGS = ['de', 'en', 'es'];
+
+  function forEachLangPair(fn) {
+    for (const tplLang of TEMPLATE_LANGS) {
+      if (!locales[tplLang]) continue;
+      for (const tokenLang of TOKEN_LANGS) fn(tplLang, tokenLang);
+    }
+  }
+
+  function addCandidate(bucket, field, value) {
+    if (!bucket[field]) bucket[field] = new Set();
+    bucket[field].add(value);
+  }
+
+  function isDefaultNotificationValue(field, value) {
+    let found = false;
+    forEachLangPair((tplLang, tokenLang) => {
+      if (found) return;
+      for (const type of NOTIFICATION_TYPES) {
+        const candidate = field === 'subject'
+          ? buildNotificationSubject(type, tplLang, tokenLang)
+          : notificationDefaults(type, tplLang, tokenLang)[field];
+        if (candidate === value) found = true;
+      }
+    });
+    return found;
+  }
+
+  // id → { feld → Set bekannter Default-Werte }
+  function defaultTemplateCandidates() {
+    const byId = new Map();
+    forEachLangPair((tplLang, tokenLang) => {
+      const defaults = defaultTemplates(tplLang, tokenLang);
+      if (!defaults) return;
+      for (const def of defaults) {
+        let bucket = byId.get(def.id);
+        if (!bucket) {
+          bucket = Object.create(null);
+          byId.set(def.id, bucket);
+        }
+        addCandidate(bucket, 'name', def.name);
+        addCandidate(bucket, 'subject', def.subject);
+        for (const field of TEMPLATE_TEXT_FIELDS) {
+          addCandidate(bucket, field, def.config[field]);
+        }
+        // Die Benachrichtigungsvorlage kennt drei Ausprägungen; defaultTemplates()
+        // liefert nur die aktive.
+        if (def.config.notificationType) {
+          for (const type of NOTIFICATION_TYPES) {
+            const notify = notificationDefaults(type, tplLang, tokenLang);
+            addCandidate(bucket, 'subject', buildNotificationSubject(type, tplLang, tokenLang));
+            addCandidate(bucket, 'previewTextVar', notify.previewText);
+            addCandidate(bucket, 'customIntro', notify.intro);
+          }
+        }
+      }
+    });
+    return byId;
+  }
+
+  // feld → Set bekannter Platzhalterwerte über alle Vorlagensprachen
+  function designTextCandidates() {
+    const bucket = Object.create(null);
+    for (const lang of TEMPLATE_LANGS) {
+      if (!locales[lang]) continue;
+      const texts = designTextDefaults(lang);
+      for (const key of DESIGN_TEXT_KEYS) addCandidate(bucket, key, texts[key]);
+    }
+    return bucket;
+  }
+
+  // Versionsstand der gespeicherten Reparaturen:
+  //   2 — Variablen-Tokens auf die Sprache der Zone normalisiert
+  //   3 — Badge-Zeichen von der Glühbirne auf ein BMP-Emoji umgestellt
+  //   4 — Vorlagensprache eingeführt
+  const VAR_SCHEMA = 4;
+
   // ── App State ──
   let state = {
     design: { ...DEFAULT_DESIGN },
-    templates: JSON.parse(JSON.stringify(DEFAULT_TEMPLATES)),
+    // Leer, weil die Vorlagen aus den Locale-Dateien entstehen und die noch
+    // nicht geladen sind. applyLocaleDefaults() füllt sie in init().
+    templates: [],
+    // Eine frische Sitzung ist per Definition auf dem aktuellen Stand. Ohne das
+    // exportierten Export und Share-Link varSchema: undefined, und der Empfänger
+    // ließe alle Migrationen erneut über eine bereits aktuelle Konfiguration laufen.
+    varSchema: VAR_SCHEMA,
     activeTemplateId: 'ticket-note',
     activeStyle: 'modern-card'
   };
@@ -888,7 +909,7 @@
         html += `              </tr>\n`;
         html += `              <tr>\n`;
         html += `                <td style="font-size:12px;color:${d.accentColor};padding-top:4px;font-family:${font};">\n`;
-        html += `                  Ticket ${r(tokenFor('ticket.number'))} &nbsp;|&nbsp; Status: ${r(tokenFor('ticket.status'))} &nbsp;|&nbsp; Priorit&auml;t: ${r(tokenFor('ticket.priority'))}\n`;
+        html += `                  Ticket ${r(tokenFor('ticket.number'))} &nbsp;|&nbsp; ${tt('out.status')} ${r(tokenFor('ticket.status'))} &nbsp;|&nbsp; ${tt('out.priorityHtml')} ${r(tokenFor('ticket.priority'))}\n`;
         html += `                </td>\n`;
         html += `              </tr>\n`;
         html += `            </table>\n`;
@@ -907,7 +928,7 @@
         html += `              </tr>\n`;
         html += `              <tr>\n`;
         html += `                <td style="font-size:12px;color:${d.accentColor};padding-top:4px;font-family:${font};">\n`;
-        html += `                  Ticket ${r(tokenFor('ticket.number'))} &nbsp;|&nbsp; Status: ${r(tokenFor('ticket.status'))} &nbsp;|&nbsp; Priorit&auml;t: ${r(tokenFor('ticket.priority'))}\n`;
+        html += `                  Ticket ${r(tokenFor('ticket.number'))} &nbsp;|&nbsp; ${tt('out.status')} ${r(tokenFor('ticket.status'))} &nbsp;|&nbsp; ${tt('out.priorityHtml')} ${r(tokenFor('ticket.priority'))}\n`;
         html += `                </td>\n`;
         html += `              </tr>\n`;
         html += `            </table>\n`;
@@ -1010,7 +1031,7 @@
         html += `        <tr>\n`;
         html += `          <td style="padding:4px 30px 28px 30px;" align="center">\n`;
         html += `            <a href="${portalHref}" style="color:${d.accentColor};text-decoration:underline;font-size:12px;font-family:${font};">\n`;
-        html += `              ${r(c.ctaText || 'Ticket im Portal ansehen')}\n`;
+        html += `              ${r(c.ctaText || tt('out.ctaFallback'))}\n`;
         html += `            </a>\n`;
         html += `          </td>\n`;
         html += `        </tr>\n`;
@@ -1027,7 +1048,7 @@
       html += `            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f9f9f9;border-radius:4px;">\n`;
       html += `              <tr>\n`;
       html += `                <td style="padding:16px 20px;text-align:center;font-family:${font};">\n`;
-      html += `                  <p style="margin:0 0 10px 0;font-size:13px;color:${d.textColor};">Alle Ihre Tickets und Anfragen auf einen Blick:</p>\n`;
+      html += `                  <p style="margin:0 0 10px 0;font-size:13px;color:${d.textColor};">${tt('out.portalIntro')}</p>\n`;
       html += `                  <a href="${portalHref}" style="color:${d.primaryColor};text-decoration:none;font-size:14px;font-weight:bold;font-family:${font};">\n`;
       html += `                    ${escapeHtml(d.portalText)}&nbsp;&rarr;\n`;
       html += `                  </a>\n`;
@@ -1070,7 +1091,7 @@
       html += `                  <strong style="font-size:14px;color:${d.textColor};">${r(tokenFor('misc.initiatingResourceName'))}</strong><br />\n`;
       html += `                  <span style="font-size:13px;color:${d.primaryColor};">${d.company}</span> &middot; <span style="font-size:11px;color:${d.accentColor};font-style:italic;">${d.claim}</span><br />\n`;
       html += `                  <span style="font-size:12px;">${d.address} &middot; ${d.phone}</span><br />\n`;
-      html += `                  <span style="font-size:12px;">Web: <a href="${d.web}" style="color:${d.primaryColor};text-decoration:none;">${getDomain(d.web)}</a></span>\n`;
+      html += `                  <span style="font-size:12px;">${tt('out.web')} <a href="${d.web}" style="color:${d.primaryColor};text-decoration:none;">${getDomain(d.web)}</a></span>\n`;
       html += `                </td>\n`;
       html += `              </tr>\n`;
       html += `            </table>\n`;
@@ -1100,8 +1121,8 @@
       html += `                  <span style="font-size:11px;color:${d.accentColor};font-style:italic;">${d.claim}</span><br />\n`;
       html += `                  <br />\n`;
       html += `                  <span style="font-size:12px;">${d.address}</span><br />\n`;
-      html += `                  <span style="font-size:12px;">Tel: ${d.phone}</span><br />\n`;
-      html += `                  <span style="font-size:12px;">Web: <a href="${d.web}" style="color:${d.primaryColor};text-decoration:none;">${getDomain(d.web)}</a></span><br />\n`;
+      html += `                  <span style="font-size:12px;">${tt('out.tel')} ${d.phone}</span><br />\n`;
+      html += `                  <span style="font-size:12px;">${tt('out.web')} <a href="${d.web}" style="color:${d.primaryColor};text-decoration:none;">${getDomain(d.web)}</a></span><br />\n`;
       html += `                  <br />\n`;
       html += `                  <span style="font-size:10px;color:${d.accentColor};">${d.certs}</span>\n`;
       html += `                </td>\n`;
@@ -1124,14 +1145,14 @@
     const font = d.font;
     let html = '';
 
-    const line1 = `${d.company} | GF: ${d.legalCeo} | ${d.legalCourt}, ${d.legalRegNr} | USt-IdNr: ${d.legalVatId}`;
+    const line1 = `${d.company} | ${tt('out.ceo')} ${d.legalCeo} | ${d.legalCourt}, ${d.legalRegNr} | ${tt('out.vatId')} ${d.legalVatId}`;
 
     if (style === 'corporate-classic') {
       html += `        <!-- LEGAL FOOTER -->\n`;
       html += `        <tr>\n`;
       html += `          <td style="background-color:#2c2c2c;padding:10px 30px 14px 30px;text-align:center;font-size:10px;color:#aaaaaa;font-family:${font};line-height:1.6;">\n`;
       html += `            ${line1}<br />\n`;
-      html += `            <a href="${d.legalImprintUrl}" style="color:#aaaaaa;text-decoration:underline;">Impressum</a> &middot; <a href="${d.legalPrivacyUrl}" style="color:#aaaaaa;text-decoration:underline;">Datenschutz</a>\n`;
+      html += `            <a href="${d.legalImprintUrl}" style="color:#aaaaaa;text-decoration:underline;">${tt('out.imprint')}</a> &middot; <a href="${d.legalPrivacyUrl}" style="color:#aaaaaa;text-decoration:underline;">${tt('out.privacy')}</a>\n`;
       html += `          </td>\n`;
       html += `        </tr>\n\n`;
     } else {
@@ -1139,7 +1160,7 @@
       html += `        <tr>\n`;
       html += `          <td style="padding:10px 30px 14px 30px;text-align:center;font-size:10px;color:#aaaaaa;font-family:${font};line-height:1.6;">\n`;
       html += `            ${line1}<br />\n`;
-      html += `            <a href="${d.legalImprintUrl}" style="color:#aaaaaa;text-decoration:underline;">Impressum</a> &middot; <a href="${d.legalPrivacyUrl}" style="color:#aaaaaa;text-decoration:underline;">Datenschutz</a>\n`;
+      html += `            <a href="${d.legalImprintUrl}" style="color:#aaaaaa;text-decoration:underline;">${tt('out.imprint')}</a> &middot; <a href="${d.legalPrivacyUrl}" style="color:#aaaaaa;text-decoration:underline;">${tt('out.privacy')}</a>\n`;
       html += `          </td>\n`;
       html += `        </tr>\n\n`;
     }
@@ -1358,7 +1379,7 @@
       // Ticket-ID — nicht die angezeigte Ticketnummer.
       const ctaTicketId = useExampleData ? exampleFor('ticket.id') : tokenFor('ticket.id');
       const ctaHref = escapeHtml(d.autotaskUrl ? d.autotaskUrl.replace('{id}', ctaTicketId) : '#');
-      const ctaLabel = escapeHtml(d.autotaskLinkText || 'In Autotask \u00f6ffnen');
+      const ctaLabel = escapeHtml(d.autotaskLinkText || tt('out.autotaskLinkFallback'));
       html += `        <!-- AUTOTASK CTA -->\n`;
       html += `        <tr>\n`;
       html += `          <td style="padding:0 30px 28px 30px;" align="center">\n`;
@@ -1403,13 +1424,13 @@
           '{id}',
           useExampleData ? exampleFor('ticket.id') : tokenFor('ticket.id')
         );
-        blocks.push(`${d.autotaskLinkText || 'In Autotask öffnen'}: ${url}`);
+        blocks.push(`${d.autotaskLinkText || tt('out.autotaskLinkFallback')}: ${url}`);
       }
     } else {
       if (s.ticketInfo) {
         blocks.push(
           `${r(tokenFor('ticket.title'))}\n` +
-          `Ticket ${r(tokenFor('ticket.number'))} | Status: ${r(tokenFor('ticket.status'))} | Priorität: ${r(tokenFor('ticket.priority'))}`
+          `Ticket ${r(tokenFor('ticket.number'))} | ${tt('out.status')} ${r(tokenFor('ticket.status'))} | ${tt('out.priority')} ${r(tokenFor('ticket.priority'))}`
         );
       }
 
@@ -1429,11 +1450,11 @@
       }
 
       if (s.bookingButton && d.bookingUrl) {
-        blocks.push(`${d.bookingText || 'Termin buchen'}: ${d.bookingUrl}`);
+        blocks.push(`${d.bookingText || tt('out.bookingFallback')}: ${d.bookingUrl}`);
       }
 
       if (s.kundenportal && d.portalUrl) {
-        blocks.push(`${d.portalText || 'Kundenportal'}: ${d.portalUrl}`);
+        blocks.push(`${d.portalText || tt('out.portalFallback')}: ${d.portalUrl}`);
       }
 
       if (s.signature) {
@@ -1441,8 +1462,8 @@
         const companyLine = d.claim ? `${d.company} · ${d.claim}` : d.company;
         sig.push(companyLine);
         if (d.address) sig.push(d.address);
-        if (d.phone) sig.push(`Tel: ${d.phone}`);
-        if (d.web) sig.push(`Web: ${d.web}`);
+        if (d.phone) sig.push(`${tt('out.tel')} ${d.phone}`);
+        if (d.web) sig.push(`${tt('out.web')} ${d.web}`);
         if (d.certs) sig.push(d.certs);
         blocks.push('--\n' + sig.join('\n'));
       }
@@ -1453,9 +1474,9 @@
 
       if (s.legalFooter && t.audience !== 'internal') {
         const legal = [];
-        legal.push(`${d.company} | GF: ${d.legalCeo} | ${d.legalCourt}, ${d.legalRegNr} | USt-IdNr: ${d.legalVatId}`);
-        if (d.legalImprintUrl) legal.push(`Impressum: ${d.legalImprintUrl}`);
-        if (d.legalPrivacyUrl) legal.push(`Datenschutz: ${d.legalPrivacyUrl}`);
+        legal.push(`${d.company} | ${tt('out.ceo')} ${d.legalCeo} | ${d.legalCourt}, ${d.legalRegNr} | ${tt('out.vatId')} ${d.legalVatId}`);
+        if (d.legalImprintUrl) legal.push(`${tt('out.imprint')}: ${d.legalImprintUrl}`);
+        if (d.legalPrivacyUrl) legal.push(`${tt('out.privacy')}: ${d.legalPrivacyUrl}`);
         blocks.push(legal.join('\n'));
       }
     }
@@ -1513,6 +1534,8 @@
   }
 
   // ── Write Design to UI ──
+  // Die zehn Platzhalter-Texte kommen aus der Locale und koennen fehlen, wenn
+  // deren Abruf scheitert — dann bleibt das Feld leer statt "undefined" zu zeigen.
   function writeDesignToUI() {
     const d = state.design;
     $('#ds-primary-color').value = d.primaryColor;
@@ -1522,25 +1545,25 @@
     $('#ds-accent-color').value = d.accentColor;
     $('#ds-accent-color-text').value = d.accentColor;
     $('#ds-logo').value = d.logoUrl;
-    $('#ds-company').value = d.company;
-    $('#ds-claim').value = d.claim;
-    $('#ds-address').value = d.address;
+    $('#ds-company').value = d.company || '';
+    $('#ds-claim').value = d.claim || '';
+    $('#ds-address').value = d.address || '';
     $('#ds-phone').value = d.phone;
     $('#ds-web').value = d.web;
     $('#ds-certs').value = d.certs;
     $('#ds-font').value = d.font;
-    $('#ds-legal-ceo').value = d.legalCeo;
-    $('#ds-legal-court').value = d.legalCourt;
-    $('#ds-legal-regnr').value = d.legalRegNr;
-    $('#ds-legal-vatid').value = d.legalVatId;
+    $('#ds-legal-ceo').value = d.legalCeo || '';
+    $('#ds-legal-court').value = d.legalCourt || '';
+    $('#ds-legal-regnr').value = d.legalRegNr || '';
+    $('#ds-legal-vatid').value = d.legalVatId || '';
     $('#ds-legal-imprint').value = d.legalImprintUrl;
     $('#ds-legal-privacy').value = d.legalPrivacyUrl;
     $('#ds-logo-enabled').checked = d.logoEnabled !== false;
     $('#ds-booking-url').value = d.bookingUrl;
-    $('#ds-booking-text').value = d.bookingText;
+    $('#ds-booking-text').value = d.bookingText || '';
     $('#ds-booking-active').checked = d.bookingActive;
     $('#ds-portal-url').value = d.portalUrl;
-    $('#ds-portal-text').value = d.portalText;
+    $('#ds-portal-text').value = d.portalText || '';
     $('#ds-autotask-zone').value = getZone().id;
     $('#ds-autotask-url').value = d.autotaskUrl || '';
     $('#ds-autotask-link-text').value = d.autotaskLinkText || '';
@@ -1568,12 +1591,16 @@
   }
 
   function updateZoneHint() {
+    // Spanische Zonen bekommen englische Vorlagentexte — das soll dastehen,
+    // damit ein ES-Nutzer den Rückfall nicht für einen Fehler hält.
+    const fallback = varLang() === 'es' ? t('zoneHint.esFallback') : '';
     $('#ds-autotask-zone-hint').textContent =
-      t('zoneHint', { lang: ZONE_LANG_LABELS[varLang()] });
+      t('zoneHint', { lang: ZONE_LANG_LABELS[varLang()] }) + fallback;
   }
 
-  function onZoneChange(nextId) {
+  async function onZoneChange(nextId) {
     const previousLang = varLang();
+    const previousTemplateLang = templateLang();
     const previousUrl = state.design.autotaskUrl;
     state.design.autotaskZone = zoneById(nextId).id;
 
@@ -1590,7 +1617,16 @@
       if (Object.keys(catalogs).length) ensureCatalog(nextLang);
     }
 
+    // Nur wenn die Vorlagensprache der Zone folgt: eine bewusst gewählte
+    // bleibt stehen. Erst nach dem Retokenisieren, damit die Default-Erkennung
+    // auf Tokens der neuen Zonensprache trifft.
+    const nextTemplateLang = templateLang();
+    if (nextTemplateLang !== previousTemplateLang) {
+      await setTemplateLang(nextTemplateLang, { from: previousTemplateLang });
+    }
+
     writeDesignToUI();
+    renderTemplateTabs();
     renderTemplateConfig();
     renderSubjectField();
     onStateChange();
@@ -1600,6 +1636,102 @@
       showToast(result.unknown
         ? t('toast.retokenizedUnknown', { count: result.replaced, lang: langLabel, unknown: result.unknown })
         : t('toast.retokenized', { count: result.replaced, lang: langLabel }));
+    }
+  }
+
+  // ── Vorlagensprache umschalten ──
+  function updateTemplateLangSwitch() {
+    const active = templateLang();
+    for (const btn of $$('#template-lang-switch button')) {
+      btn.classList.toggle('active', btn.dataset.templateLang === active);
+    }
+    const explicit = !!normalizeTemplateLang(state.design.templateLang);
+    $('#template-lang-hint').textContent =
+      t(explicit ? 'templateLang.hintExplicit' : 'templateLang.hintZone',
+        { lang: ZONE_LANG_LABELS[active] });
+  }
+
+  // Schreibt nur Felder um, die noch einen bekannten Default tragen — von Hand
+  // geänderter Text bleibt stehen. `from` gibt die Ausgangssprache vor, weil
+  // onZoneChange die Zone bereits umgestellt hat und templateLang() dort schon
+  // die neue Sprache liefert.
+  async function setTemplateLang(lang, options) {
+    const opts = options || {};
+    const next = normalizeTemplateLang(lang);
+    if (!next) return false;
+    const previous = opts.from || templateLang();
+
+    if (!(await ensureTemplateLocale(next))) {
+      showToast(t('toast.templateLocaleFailed'));
+      return false;
+    }
+    // Auch die Ausgangssprache, denn verglichen wird gegen die Defaults beider
+    // Sprachen: sonst verlöre ein in DE angelegter Stand nach dem Wechsel seine
+    // Default-Erkennung und behielte deutschen Text.
+    await ensureTemplateLocale(previous);
+
+    if (next !== previous) {
+      const templateCandidates = defaultTemplateCandidates();
+      const designCandidates = designTextCandidates();
+      const keep = state.design.templateLang;
+      // Die Materialisierung liest templateLang(), muss also schon die
+      // Zielsprache sehen.
+      state.design.templateLang = next;
+      rewriteDefaultTexts(templateCandidates, designCandidates);
+      state.design.templateLang = opts.explicit ? next : keep;
+    } else if (opts.explicit) {
+      state.design.templateLang = next;
+    }
+
+    updateTemplateLangSwitch();
+    return true;
+  }
+
+  function rewriteDefaultTexts(templateCandidates, designCandidates) {
+    const defaults = defaultTemplates();
+    if (!defaults) return;
+    const defaultById = new Map(defaults.map(def => [def.id, def]));
+
+    for (const tpl of state.templates) {
+      const def = defaultById.get(tpl.id);
+      const candidates = templateCandidates.get(tpl.id);
+      if (!def || !candidates) continue;
+
+      // Erst prüfen, dann schreiben: sonst sieht die zweite Prüfung den bereits
+      // ersetzten Wert.
+      const wasDefault = {};
+      wasDefault.name = !!(candidates.name && candidates.name.has(tpl.name));
+      wasDefault.subject = !!(candidates.subject && candidates.subject.has(tpl.subject));
+      for (const field of TEMPLATE_TEXT_FIELDS) {
+        wasDefault[field] = !!(candidates[field] && candidates[field].has(tpl.config[field]));
+      }
+
+      // Die Benachrichtigungsvorlage behält ihren Typ; Betreff, Vorschautext und
+      // Einleitung kommen deshalb aus dessen Defaults, nicht aus denen von queue.
+      const notify = tpl.config.notificationType
+        ? notificationDefaults(tpl.config.notificationType)
+        : null;
+
+      if (wasDefault.name) tpl.name = def.name;
+      if (wasDefault.subject) {
+        tpl.subject = notify
+          ? buildNotificationSubject(tpl.config.notificationType)
+          : def.subject;
+      }
+      for (const field of TEMPLATE_TEXT_FIELDS) {
+        if (!wasDefault[field]) continue;
+        if (notify && field === 'previewTextVar') tpl.config[field] = notify.previewText;
+        else if (notify && field === 'customIntro') tpl.config[field] = notify.intro;
+        else tpl.config[field] = def.config[field];
+      }
+      tpl.previewExamples = def.previewExamples;
+    }
+
+    const texts = designTextDefaults(templateLang());
+    for (const key of DESIGN_TEXT_KEYS) {
+      if (designCandidates[key] && designCandidates[key].has(state.design[key])) {
+        state.design[key] = texts[key];
+      }
     }
   }
 
@@ -1751,21 +1883,19 @@
         const currentPreview = c.previewTextVar;
         const currentIntro   = c.customIntro;
 
-        const subjectIsDefault = Object.keys(NOTIFICATION_TYPE_DEFAULTS).some(
-          t => currentSubject === buildNotificationSubject(t)
-        );
-        const previewIsDefault = Object.keys(NOTIFICATION_TYPE_DEFAULTS).some(
-          t => currentPreview === NOTIFICATION_TYPE_DEFAULTS[t].previewText
-        );
-        const introIsDefault   = Object.keys(NOTIFICATION_TYPE_DEFAULTS).some(
-          t => currentIntro === NOTIFICATION_TYPE_DEFAULTS[t].intro
-        );
+        const subjectIsDefault = isDefaultNotificationValue('subject', currentSubject);
+        const previewIsDefault = isDefaultNotificationValue('previewText', currentPreview);
+        const introIsDefault   = isDefaultNotificationValue('intro', currentIntro);
 
         c.notificationType = newType;
 
-        if (subjectIsDefault) template.subject    = buildNotificationSubject(newType);
-        if (previewIsDefault) c.previewTextVar     = NOTIFICATION_TYPE_DEFAULTS[newType].previewText;
-        if (introIsDefault)   c.customIntro        = NOTIFICATION_TYPE_DEFAULTS[newType].intro;
+        // Ohne Sprachargumente: aktive Vorlagen- und Zonensprache. Vorher
+        // standen hier deutsche Token-Literale, die eine englische Autotask-
+        // Instanz nicht auflöst.
+        const defaults = notificationDefaults(newType);
+        if (subjectIsDefault) template.subject = buildNotificationSubject(newType);
+        if (previewIsDefault) c.previewTextVar = defaults.previewText;
+        if (introIsDefault)   c.customIntro    = defaults.intro;
 
         renderSubjectField();
         renderTemplateConfig();
@@ -1955,11 +2085,15 @@
     const activeTemplate = getActiveTemplate();
     const autotaskWarn = (d.autotaskUrl && !d.autotaskUrl.includes('{id}')) ||
       (!d.autotaskUrl && activeTemplate && activeTemplate.audience === 'internal');
+    // Gegen die Platzhalter-Defaults *beider* Vorlagensprachen, nicht gegen
+    // String-Literale — sonst verschwindet die Warnung beim Umschalten auf EN.
+    const placeholders = designTextCandidates();
+    const isPlaceholder = (key) => !!(placeholders[key] && placeholders[key].has(d[key]));
     // Schluessel sind die stabilen data-section-Werte aus index.html, nicht der
     // sichtbare Header-Text — der wechselt mit der Oberflaechensprache.
     const checks = {
-      designSystem: (d.logoEnabled !== false && !d.logoUrl) || d.company === 'Muster GmbH' || d.web === 'https://www.example.com',
-      legal: d.legalCeo === 'Max Mustermann' || d.legalRegNr === 'HRB 12345 B' || d.legalImprintUrl === 'https://www.example.com/impressum/',
+      designSystem: (d.logoEnabled !== false && !d.logoUrl) || isPlaceholder('company') || d.web === DEFAULT_DESIGN.web,
+      legal: isPlaceholder('legalCeo') || isPlaceholder('legalRegNr') || d.legalImprintUrl === DEFAULT_DESIGN.legalImprintUrl,
       booking: false,
       portal: false,
       autotask: autotaskWarn
@@ -2066,35 +2200,22 @@
     '[Your Local Organization: Phone]': 'yourCompany.phone'
   };
 
-  // Versionsstand der gespeicherten Reparaturen:
-  //   2 — Variablen-Tokens auf die Sprache der Zone normalisiert
-  //   3 — Badge-Zeichen von der Glühbirne auf ein BMP-Emoji umgestellt
-  const VAR_SCHEMA = 3;
-
   // ── State Migration (mutates state in-place, returns same reference) ──
+  // Bewusst synchron und locale-frei: der schema<4-Block legt erst fest, welche
+  // Vorlagensprache ein Stand trägt. Alles, was diese Sprache *braucht* — die
+  // Vorlagentexte selbst und die Vorschau-Beispiele — macht danach
+  // applyLocaleDefaults(), wenn die Sprache feststeht.
   function migrateState(state) {
     if (state.templates) {
-      const defaultById = new Map(DEFAULT_TEMPLATES.map(t => [t.id, t]));
-
       state.templates.forEach(t => {
-        const def = defaultById.get(t.id);
-        if (def) {
-          t.audience = def.audience;
-          // Vorschau-Beispiele sind nicht nutzer-editierbar: immer aus den
-          // Defaults ziehen, damit gespeicherte Stände sie nachträglich bekommen.
-          t.previewExamples = def.previewExamples;
+        const spec = SPEC_BY_ID.get(t.id);
+        if (spec) {
+          t.audience = spec.audience;
         } else if (!t.audience) {
           t.audience = 'customer';
         }
         if (t.id === 'internal-notification' && t.config && !t.config.notificationType) {
           t.config.notificationType = 'queue';
-        }
-      });
-
-      const existingIds = new Set(state.templates.map(t => t.id));
-      DEFAULT_TEMPLATES.forEach(def => {
-        if (!existingIds.has(def.id)) {
-          state.templates.push(JSON.parse(JSON.stringify(def)));
         }
       });
     }
@@ -2131,9 +2252,49 @@
       });
     }
 
+    if (schema < 4 && state.design && !normalizeTemplateLang(state.design.templateLang)) {
+      // Jeder Stand von vor der Vorlagensprache trägt deutsche Texte — auch auf
+      // einer englischen Zone. Ihn an 'de' zu heften ist die einzige
+      // verlustfreie Wahl; über die Zone aufgelöst tauschte er seine
+      // gespeicherten Texte gegen englische Defaults.
+      state.design.templateLang = resolveTemplateLangFor(state.design, schema);
+    }
+
     state.varSchema = VAR_SCHEMA;
 
     return state;
+  }
+
+  // Setzt alles, was die Vorlagensprache braucht — läuft deshalb immer NACH
+  // migrateState(), das die Sprache erst festlegt.
+  async function applyLocaleDefaults() {
+    const lang = templateLang();
+    if (!(await ensureTemplateLocale(lang))) {
+      showToast(t('toast.templateLocaleFailed'));
+      return false;
+    }
+
+    const texts = designTextDefaults(lang);
+    for (const key of DESIGN_TEXT_KEYS) {
+      if (state.design[key] === undefined) state.design[key] = texts[key];
+    }
+
+    const defaults = defaultTemplates(lang);
+    if (!defaults) return false;
+    if (!Array.isArray(state.templates)) state.templates = [];
+
+    const existingIds = new Set(state.templates.map(t => t.id));
+    for (const def of defaults) {
+      if (!existingIds.has(def.id)) state.templates.push(JSON.parse(JSON.stringify(def)));
+    }
+    // Vorschau-Beispiele sind nicht nutzer-editierbar: immer aus den Defaults
+    // ziehen, damit gespeicherte Stände sie in der aktiven Sprache bekommen.
+    const defaultById = new Map(defaults.map(def => [def.id, def]));
+    for (const t of state.templates) {
+      const def = defaultById.get(t.id);
+      if (def) t.previewExamples = def.previewExamples;
+    }
+    return true;
   }
 
   function loadFromLocalStorage() {
@@ -2142,9 +2303,13 @@
       if (saved) {
         const parsed = JSON.parse(saved);
         state.design = { ...DEFAULT_DESIGN, ...parsed.design };
-        state.templates = parsed.templates || JSON.parse(JSON.stringify(DEFAULT_TEMPLATES));
+        state.templates = parsed.templates || [];
         state.activeTemplateId = parsed.activeTemplateId || 'ticket-note';
         state.activeStyle = parsed.activeStyle || 'modern-card';
+        // Der gespeicherte Stand entscheidet, welche Migrationen laufen. Ohne
+        // diese Zeile sähe migrateState() immer Schema 0 und heftete jeden
+        // Stand an 'de', auch einen, der bewusst der Zone folgen soll.
+        state.varSchema = parsed.varSchema;
         migrateState(state);
         applyAudienceStyleLock();
         return true;
@@ -2299,7 +2464,10 @@
         '  ' + t('zip.readmeSubject'),
         '  ' + t('zip.readmeHtml'),
         '  ' + t('zip.readmeText'), '',
-        t('zip.readmeNote', { zone: zone.id, lang: ZONE_LANG_LABELS[zone.lang] }), '',
+        t('zip.readmeNote', { zone: zone.id, lang: ZONE_LANG_LABELS[zone.lang] }),
+        // Der Rahmentext folgt der Oberflächensprache, der Inhalt der Ordner der
+        // Vorlagensprache — deshalb steht sie hier ausdrücklich dabei.
+        t('zip.readmeTemplateLang', { lang: ZONE_LANG_LABELS[templateLang()] }), '',
         t('zip.readmeIndex'), '',
         index.join('\n'), ''
       ].join('\n')
@@ -2336,10 +2504,12 @@
   }
 
   // ── Apply Config (shared by import and share link loading) ──
-  function applyConfig(data) {
+  async function applyConfig(data) {
     // Die Oberflächensprache ist eine Einstellung des Lesers, keine Eigenschaft
     // der Konfiguration. Ohne diese Zeile zwänge ein geteilter Link oder ein
     // importiertes JSON dem Empfänger die Sprache des Absenders auf.
+    // Die Vorlagensprache dagegen gehört zur Konfiguration — sie bestimmt, in
+    // welcher Sprache die Vorlagen verfasst sind, und reist im design-Objekt mit.
     const keepUiLang = state.design.uiLang;
     if (data.design) state.design = { ...DEFAULT_DESIGN, ...data.design, uiLang: keepUiLang };
     if (data.templates) state.templates = data.templates;
@@ -2348,6 +2518,8 @@
     // die Token-Reparatur.
     state.varSchema = data.varSchema;
     migrateState(state);
+    // Erst jetzt steht die Vorlagensprache der Nutzlast fest.
+    await applyLocaleDefaults();
     state.activeTemplateId = state.templates[0]?.id || 'ticket-note';
     state.activeStyle = data.activeStyle || 'modern-card';
     applyAudienceStyleLock();
@@ -2357,16 +2529,19 @@
     renderSectionToggles();
     renderTemplateConfig();
     renderSubjectField();
+    updateTemplateLangSwitch();
     onStateChange();
   }
 
   // ── JSON Import ──
   function importConfig(file) {
     const reader = new FileReader();
-    reader.onload = (e) => {
+    // async, weil applyConfig() die Vorlagentexte nachlädt — ohne await liefe
+    // der Toast vor der Migration und ein Reject entkäme dem catch.
+    reader.onload = async (e) => {
       try {
         const data = JSON.parse(e.target.result);
-        applyConfig(data);
+        await applyConfig(data);
         showToast(t('toast.imported'));
       } catch (err) {
         showToast(t('toast.importFailed'));
@@ -2495,7 +2670,7 @@
       const accepted = await showConfirmModal();
 
       if (accepted) {
-        applyConfig(data);
+        await applyConfig(data);
         showToast(t('toast.shareLoaded'));
       }
     } catch (err) {
@@ -2590,11 +2765,18 @@
     // alter Stände die Übersetzungstabelle braucht; die Locale muss stehen,
     // bevor irgendeine Render-Funktion das erste Mal Text erzeugt.
     const uiLang = detectUiLang();
+    // Die Vorlagensprache wird roh vorgelesen, damit ihr Bundle im selben
+    // Promise.all mitkommt. Trifft die Vorbelegung daneben, holt
+    // applyLocaleDefaults() das richtige nach — hier geht es nur um den Abruf.
+    const guessedTemplateLang = detectTemplateLang();
     const [curatedResult, localeResult] = await Promise.all([
       fetch('/psa/autotask/curated.json')
         .then(r => (r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status))))
         .catch(e => { console.error('Could not load PSA variables:', e); return null; }),
-      loadLocale(uiLang)
+      loadLocale(uiLang),
+      // Nur wenn sie sich unterscheiden: sonst liefen zwei Abrufe derselben
+      // Datei parallel, weil der Cache erst nach dem ersten gefüllt ist.
+      guessedTemplateLang === uiLang ? null : loadLocale(guessedTemplateLang)
     ]);
 
     curatedVars = curatedResult;
@@ -2608,6 +2790,11 @@
 
     // Load state from localStorage
     loadFromLocalStorage();
+
+    // Vorlagen und Platzhalter-Firmendaten in der jetzt feststehenden
+    // Vorlagensprache. Erst hier, weil tokenFor() curated.json braucht.
+    await applyLocaleDefaults();
+    applyAudienceStyleLock();
 
     // Die erkannte Sprache gewinnt gegen den gespeicherten Stand: nur so wirkt
     // ?lang= auf einem Gerät, das bereits eine andere Wahl gespeichert hat.
@@ -2623,6 +2810,7 @@
     renderSectionToggles();
     renderTemplateConfig();
     renderSubjectField();
+    updateTemplateLangSwitch();
 
     // Initial render
     renderPreview();
@@ -2658,9 +2846,26 @@
     }
 
     // ── Autotask Zone ──
-    $('#ds-autotask-zone').addEventListener('change', function () {
-      onZoneChange(this.value);
+    $('#ds-autotask-zone').addEventListener('change', async function () {
+      await onZoneChange(this.value);
     });
+
+    // ── Vorlagensprache ──
+    for (const btn of $$('#template-lang-switch button')) {
+      btn.addEventListener('click', async () => {
+        const previous = templateLang();
+        const ok = await setTemplateLang(btn.dataset.templateLang, { explicit: true });
+        if (!ok) return;
+        writeDesignToUI();
+        renderTemplateTabs();
+        renderTemplateConfig();
+        renderSubjectField();
+        onStateChange();
+        if (templateLang() !== previous) {
+          showToast(t('toast.templateLangSwitched', { lang: ZONE_LANG_LABELS[templateLang()] }));
+        }
+      });
+    }
 
     // ── Autotask URL blur validation ──
     $('#ds-autotask-url').addEventListener('blur', function() {
@@ -2798,7 +3003,10 @@
         // unter der Hand auf eine andere Sprache zu stellen.
         const keepUiLang = state.design.uiLang;
         state.design = { ...DEFAULT_DESIGN, uiLang: keepUiLang };
-        state.templates = JSON.parse(JSON.stringify(DEFAULT_TEMPLATES));
+        // templateLang faellt auf null zurueck — die Vorlagensprache folgt
+        // wieder der Zone, die hier ebenfalls auf den Default zurueckgeht.
+        state.templates = [];
+        await applyLocaleDefaults();
         state.activeTemplateId = 'ticket-note';
         state.activeStyle = 'modern-card';
         writeDesignToUI();
@@ -2807,6 +3015,7 @@
         renderSectionToggles();
         renderTemplateConfig();
         renderSubjectField();
+        updateTemplateLangSwitch();
         onStateChange();
         showToast(t('toast.reset'));
       }

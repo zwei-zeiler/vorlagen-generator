@@ -1,0 +1,28 @@
+{
+  "activeStyle": "internal-minimal",
+  "activeTemplateId": "internal-notification",
+  "design": {
+    "primaryColor": "#3d4450",
+    "textColor": "#333333",
+    "accentColor": "#777777",
+    "logoEnabled": false,
+    "company": "Beispiel IT-Betrieb GmbH",
+    "claim": "Interner Service Desk",
+    "address": "Beispielring 7, 04109 Leipzig",
+    "phone": "+49 30 23125 303",
+    "web": "https://intern.example.org",
+    "font": "Arial,Helvetica,sans-serif",
+    "legalCeo": "Kim Beispiel",
+    "legalCourt": "AG Leipzig",
+    "legalRegNr": "HRB 13579",
+    "legalVatId": "DE135792468",
+    "legalImprintUrl": "https://intern.example.org/impressum",
+    "legalPrivacyUrl": "https://intern.example.org/datenschutz",
+    "autotaskZone": "ww18",
+    "autotaskUrl": "https://ww18.autotask.net/Mvc/ServiceDesk/TicketDetail.mvc?ticketId={id}",
+    "templateLang": "de"
+  },
+  "templateOverrides": {
+    "internal-notification": { "config": { "notificationType": "sla" } }
+  }
+}

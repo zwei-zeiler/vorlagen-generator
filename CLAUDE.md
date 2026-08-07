@@ -54,6 +54,13 @@ Kein Dev-Server-Script. Statisch servieren, z.B.:
   deutscher Beschreibung und Beispielwert. Zugleich die Übersetzungstabelle beim Zonenwechsel.
 - `psa/autotask/catalog.{de,en,es}.json` — Vollkatalog (1.458 Variablen je Sprache),
   generiert, nicht von Hand pflegen. Wird erst beim Öffnen des Variablen-Pickers geladen.
+- `presets/*.json` — drei fertige Konfigurationen, ladbar über `?preset=<id>` und über das
+  Menü in der Top-Bar. Sie enthalten **nur das Delta** zu den Defaults (Style,
+  Landing-Vorlage, Design-Werte, Section-Schalter, `config.notificationType`) und
+  **keinen Vorlagentext** — der käme aus `i18n/*.json` und veraltete sonst bei jeder
+  Textänderung. Namen und Beschreibungen stehen unter `preset.<id>.*` in den
+  Locale-Dateien, die Allowlist ist `PRESETS` in `app.js`.
+  `python3 tools/check-presets.py` prüft die Invarianten offline.
 - `tools/build-psa-catalog.py` — erzeugt die Kataloge aus den offiziellen Autotask-Tabellen;
   `--check` validiert `curated.json` dagegen (offline)
 - `vercel.json` — CSP/Security-Header

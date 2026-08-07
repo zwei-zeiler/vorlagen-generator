@@ -135,6 +135,7 @@
     renderTemplateTabs();
     renderSectionToggles();
     renderTemplateConfig();
+    renderPresetMenu();
     // Nur der Hinweistext wechselt mit der Oberflaechensprache — die
     // Vorlagensprache selbst bleibt, wo sie steht.
     updateTemplateLangSwitch();
@@ -2520,7 +2521,14 @@
     migrateState(state);
     // Erst jetzt steht die Vorlagensprache der Nutzlast fest.
     await applyLocaleDefaults();
-    state.activeTemplateId = state.templates[0]?.id || 'ticket-note';
+    // Ein Preset bestimmt, welche Vorlage nach dem Laden zu sehen ist. Share-
+    // Fragmente und exportConfig()-Dateien kennen das Feld nicht und laufen
+    // unverändert in den zweiten Zweig.
+    const wanted = data.activeTemplateId &&
+      state.templates.some(tpl => tpl.id === data.activeTemplateId);
+    state.activeTemplateId = wanted
+      ? data.activeTemplateId
+      : (state.templates[0]?.id || 'ticket-note');
     state.activeStyle = data.activeStyle || 'modern-card';
     applyAudienceStyleLock();
     writeDesignToUI();
@@ -2680,6 +2688,168 @@
     window.history.replaceState({}, '', '/');
   }
 
+  // ── Presets ──
+  // Fertige Konfigurationen als JSON unter /presets/<id>.json. Diese Liste ist
+  // zugleich die Allowlist für ?preset= und die Datenquelle des Menüs — die
+  // Fetch-URL entsteht immer aus einem Eintrag von hier, nie aus dem rohen
+  // Query-Wert.
+  //
+  // Name und Beschreibung stehen unter preset.<id>.* in den Locale-Dateien und
+  // nicht in der JSON-Datei: sie gehören in die Oberflächensprache des Lesers.
+  // Die Dateien selbst tragen nur das Delta zu den Defaults — kein kopierter
+  // Vorlagentext, der bei jeder Änderung an i18n/*.json veralten würde.
+  const PRESETS = ['msp-modern', 'systemhaus-classic', 'intern-technik'];
+
+  function presetName(id) {
+    return t('preset.' + id + '.name');
+  }
+
+  // Baut aus dem Delta eine Nutzlast im Format von exportConfig().
+  //
+  // Beide Sprachen stammen aus dem Preset, nicht aus der laufenden Sitzung: die
+  // Funktion läuft vor applyConfig(), templateLang() und varLang() lieferten
+  // hier noch den Stand des Lesers. Ein Preset mit deutscher Zone, auf einer
+  // englischen Sitzung geladen, bekäme sonst englische Tokens in eine deutsche
+  // Autotask-Instanz — die stünden beim Kunden unaufgelöst in der Mail.
+  async function buildConfigFromPreset(preset) {
+    const design = preset.design || {};
+    const tokenLang = zoneById(design.autotaskZone).lang;
+    const tplLang = normalizeTemplateLang(design.templateLang) ||
+      defaultTemplateLangForZone(design.autotaskZone);
+
+    // Vor jeder Änderung am State abbrechen: defaultTemplates() gibt ohne
+    // geladenes Bundle null zurück, und zwölf Vorlagen aus leeren Feldern
+    // landeten sonst in localStorage.
+    if (!(await ensureTemplateLocale(tplLang))) {
+      showToast(t('toast.templateLocaleFailed'));
+      return null;
+    }
+    const templates = defaultTemplates(tplLang, tokenLang);
+    if (!templates) return null;
+
+    const byId = new Map(templates.map(tpl => [tpl.id, tpl]));
+    for (const id of Object.keys(preset.templateOverrides || {})) {
+      const tpl = byId.get(id);
+      if (!tpl) continue;
+      const override = preset.templateOverrides[id];
+      if (override.sections) Object.assign(tpl.sections, override.sections);
+      // Betreff, Vorschautext und Einleitung hängen am Benachrichtigungstyp und
+      // sind in TEMPLATE_SPECS auf 'queue' vorbelegt; umgeschrieben werden sie
+      // sonst nur im change-Handler von #tpl-notification-type. Sie hier
+      // abzuleiten statt sie in die Preset-Datei zu schreiben, hält die Datei
+      // frei von Vorlagentext.
+      const type = override.config && override.config.notificationType;
+      if (type) {
+        const defaults = notificationDefaults(type, tplLang, tokenLang);
+        tpl.config.notificationType = notificationType(type);
+        tpl.config.previewTextVar = defaults.previewText;
+        tpl.config.customIntro = defaults.intro;
+        tpl.subject = buildNotificationSubject(type, tplLang, tokenLang);
+      }
+    }
+
+    return {
+      version: 1,
+      // Presets entstehen aus den heutigen Defaults und tragen keine Altlasten.
+      // Ohne das Feld setzte applyConfig() state.varSchema = undefined und
+      // migrateState() liefe die Legacy-Reparatur über frisch erzeugte Vorlagen.
+      varSchema: VAR_SCHEMA,
+      design: design,
+      templates: templates,
+      activeStyle: preset.activeStyle,
+      activeTemplateId: preset.activeTemplateId
+    };
+  }
+
+  function hasStoredConfig() {
+    try {
+      return localStorage.getItem(STORAGE_KEY) !== null;
+    } catch {
+      // Kein localStorage (privater Modus): dann gibt es auch nichts zu
+      // überschreiben, und die Rückfrage wäre gegenstandslos.
+      return false;
+    }
+  }
+
+  // options.confirm entscheidet über die Rückfrage. Der URL-Weg fragt nur, wenn
+  // schon ein Stand gespeichert ist — sonst stünde zwischen einem geteilten Link
+  // und dem Ergebnis ein Dialog, den es genau dann nicht braucht. Ein Klick im
+  // Menü fragt immer: dort ist immer eine Konfiguration auf dem Schirm.
+  async function loadPreset(id, options) {
+    const opts = options || {};
+    // Die URL entsteht aus dem Allowlist-Eintrag, nicht aus dem übergebenen
+    // Wert — ?preset=../../etc/passwd erreicht damit gar kein fetch.
+    const presetId = PRESETS.find(p => p === id);
+    if (!presetId) {
+      showToast(t('toast.presetUnknown'));
+      return;
+    }
+
+    try {
+      const resp = await fetch('/presets/' + presetId + '.json');
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      const preset = await resp.json();
+      if (!preset || typeof preset !== 'object' || Array.isArray(preset)) {
+        throw new Error('Preset enthält keine gültige Konfiguration');
+      }
+
+      const name = presetName(presetId);
+      if (opts.confirm) {
+        // Immer mit eigenem Titel und Text: showConfirmModal() setzt beides nie
+        // zurück, ein argumentloser Aufruf zeigte sonst die Formulierung des
+        // zuletzt gezeigten Dialogs.
+        const accepted = await showConfirmModal(
+          t('modal.presetTitle'),
+          t('modal.presetText', { name })
+        );
+        if (!accepted) return;
+      }
+
+      const config = await buildConfigFromPreset(preset);
+      if (!config) return;
+      await applyConfig(config);
+      showToast(t('toast.presetLoaded', { name }));
+    } catch (err) {
+      showToast(t('toast.presetFailed'));
+      console.error('Preset load error:', err);
+    }
+  }
+
+  // Der URL-Weg räumt den Parameter danach weg, analog zu
+  // loadFromShareFragment(). Der Menü-Weg lässt die Adresszeile in Ruhe.
+  async function loadPresetFromUrl(id) {
+    // Vor dem Laden gelesen: applyConfig() endet auf saveToLocalStorage(),
+    // danach läge immer ein Stand vor und die Rückfrage käme nie zustande.
+    await loadPreset(id, { confirm: hasStoredConfig() });
+    window.history.replaceState({}, '', '/');
+  }
+
+  function renderPresetMenu() {
+    const menu = $('#preset-menu');
+    menu.innerHTML = '';
+    for (const id of PRESETS) {
+      const item = document.createElement('button');
+      item.type = 'button';
+      item.className = 'preset-menu-item';
+
+      const name = document.createElement('span');
+      name.className = 'preset-menu-item-name';
+      name.textContent = presetName(id);
+
+      const desc = document.createElement('span');
+      desc.className = 'preset-menu-item-desc';
+      desc.textContent = t('preset.' + id + '.desc');
+
+      item.appendChild(name);
+      item.appendChild(desc);
+      item.addEventListener('click', () => {
+        menu.classList.remove('open');
+        loadPreset(id, { confirm: true });
+      });
+      menu.appendChild(item);
+    }
+  }
+
   // ── Show Confirm Modal ──
   function showConfirmModal(title, message) {
     return new Promise((resolve) => {
@@ -2810,6 +2980,7 @@
     renderSectionToggles();
     renderTemplateConfig();
     renderSubjectField();
+    renderPresetMenu();
     updateTemplateLangSwitch();
 
     // Initial render
@@ -3021,9 +3192,17 @@
       }
     });
 
+    // ── Presets ──
+    $('#btn-presets').addEventListener('click', (e) => {
+      e.stopPropagation();
+      $('#share-popover').classList.remove('open');
+      $('#preset-menu').classList.toggle('open');
+    });
+
     // ── Share ──
     $('#btn-share').addEventListener('click', (e) => {
       e.stopPropagation();
+      $('#preset-menu').classList.remove('open');
       createShareLink();
     });
     $('#share-popover-close').addEventListener('click', () => {
@@ -3042,6 +3221,11 @@
       if (popover.classList.contains('open') && !wrapper.contains(e.target)) {
         popover.classList.remove('open');
       }
+      const menu = $('#preset-menu');
+      const menuWrapper = $('#preset-menu-wrapper');
+      if (menu.classList.contains('open') && !menuWrapper.contains(e.target)) {
+        menu.classList.remove('open');
+      }
     });
 
     // ── Sponsor dropdown ──
@@ -3055,9 +3239,13 @@
     // ── Footer links ──
     $('#footer-brand-link').href = COMPANY_URL;
 
-    // ── Share link detection ──
+    // ── Share link / Preset detection ──
+    // Das Fragment gewinnt: bei /?preset=x#c=… erscheint genau ein Dialog.
     if (window.location.hash.startsWith(SHARE_FRAGMENT_PREFIX)) {
       loadFromShareFragment(window.location.hash.slice(SHARE_FRAGMENT_PREFIX.length));
+    } else {
+      const presetParam = new URLSearchParams(window.location.search).get('preset');
+      if (presetParam !== null) loadPresetFromUrl(presetParam);
     }
 
     // ── Keyboard shortcuts ──
@@ -3065,6 +3253,7 @@
       if (e.key === 'Escape') {
         closeVarPicker();
         $('#share-popover').classList.remove('open');
+        $('#preset-menu').classList.remove('open');
         _cancelModal();
       }
     });

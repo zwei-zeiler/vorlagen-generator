@@ -70,6 +70,10 @@
       <button class="btn" id="btn-export-all" title="Alle Vorlagen als ZIP-Archiv herunterladen (Betreff, HTML und Plain-Text je Vorlage)" data-i18n="topbar.exportAll" data-i18n-title="topbar.exportAll.title">Alle als ZIP</button>
       <button class="btn" id="btn-import" title="Konfiguration aus JSON importieren" data-i18n="topbar.importJson" data-i18n-title="topbar.importJson.title">Import JSON</button>
       <input type="file" id="import-file" accept=".json">
+      <div class="preset-menu-wrapper" id="preset-menu-wrapper">
+        <button class="btn" id="btn-presets" title="Fertige Konfiguration laden" data-i18n="topbar.presets" data-i18n-title="topbar.presets.title">Presets</button>
+        <div class="preset-menu" id="preset-menu"></div>
+      </div>
       <button class="btn btn-reset" id="btn-reset" title="Alle Einstellungen zurücksetzen" data-i18n="topbar.reset" data-i18n-title="topbar.reset.title">Zurücksetzen</button>
       <div class="share-popover-wrapper" id="share-popover-wrapper">
         <button class="btn" id="btn-share" title="Konfiguration als Link teilen" data-i18n="topbar.share" data-i18n-title="topbar.share.title">Link teilen</button>
@@ -145,7 +149,19 @@
       <!-- 5. Template-specific Config -->
       <div class="sidebar-section collapsed" id="template-config">
         <h3 class="sidebar-section-header"><span data-i18n="sidebar.templateTexts">Template-Texte</span><span class="chevron">▶</span></h3>
-        <div class="sidebar-section-content" id="template-config-content"></div>
+        <div class="sidebar-section-content">
+          <!-- Ausserhalb von #template-config-content: renderTemplateConfig()
+               leert den Container bei jedem Vorlagenwechsel. -->
+          <div class="form-group">
+            <label data-i18n="field.templateLang">Sprache der Vorlagentexte</label>
+            <div class="lang-switch" id="template-lang-switch" role="group">
+              <button type="button" data-template-lang="de" lang="de">DE</button>
+              <button type="button" data-template-lang="en" lang="en">EN</button>
+            </div>
+            <p class="field-hint" id="template-lang-hint"></p>
+          </div>
+          <div id="template-config-content"></div>
+        </div>
       </div>
 
       <!-- 6. Design System -->
@@ -193,27 +209,27 @@
 
           <div class="form-group">
             <label data-i18n="field.company">Firmenname</label>
-            <input type="text" id="ds-company" value="Muster GmbH">
+            <input type="text" id="ds-company" value="">
           </div>
 
           <div class="form-group">
             <label data-i18n="field.claim">Claim / Slogan</label>
-            <input type="text" id="ds-claim" value="Ihr IT-Dienstleister">
+            <input type="text" id="ds-claim" value="">
           </div>
 
           <div class="form-group">
             <label data-i18n="field.address">Adresse</label>
-            <input type="text" id="ds-address" value="Musterstraße 1, 10115 Berlin">
+            <input type="text" id="ds-address" value="">
           </div>
 
           <div class="form-group">
             <label data-i18n="field.phone">Telefon</label>
-            <input type="tel" id="ds-phone" value="+49 30 123 456 789">
+            <input type="tel" id="ds-phone" value="">
           </div>
 
           <div class="form-group">
             <label data-i18n="field.web">Web-URL</label>
-            <input type="url" id="ds-web" value="https://www.example.com">
+            <input type="url" id="ds-web" value="">
           </div>
 
           <div class="form-group">
@@ -257,7 +273,7 @@
 
           <div class="form-group">
             <label data-i18n="field.bookingText">Buchungslink-Text</label>
-            <input type="text" id="ds-booking-text" value="Jetzt Termin buchen">
+            <input type="text" id="ds-booking-text" value="">
           </div>
 
         </div>
@@ -275,7 +291,7 @@
 
           <div class="form-group">
             <label data-i18n="field.portalText">Link-Text</label>
-            <input type="text" id="ds-portal-text" value="Kundenportal öffnen">
+            <input type="text" id="ds-portal-text" value="">
           </div>
 
         </div>
@@ -313,32 +329,32 @@
 
           <div class="form-group">
             <label data-i18n="field.legalCeo">Geschäftsführer</label>
-            <input type="text" id="ds-legal-ceo" value="Max Mustermann">
+            <input type="text" id="ds-legal-ceo" value="">
           </div>
 
           <div class="form-group">
             <label data-i18n="field.legalCourt">Registergericht</label>
-            <input type="text" id="ds-legal-court" value="AG Berlin-Charlottenburg">
+            <input type="text" id="ds-legal-court" value="">
           </div>
 
           <div class="form-group">
             <label data-i18n="field.legalRegNr">Handelsregister-Nr</label>
-            <input type="text" id="ds-legal-regnr" value="HRB 12345 B">
+            <input type="text" id="ds-legal-regnr" value="">
           </div>
 
           <div class="form-group">
             <label data-i18n="field.legalVat">USt-IdNr</label>
-            <input type="text" id="ds-legal-vatid" value="DE123456789">
+            <input type="text" id="ds-legal-vatid" value="">
           </div>
 
           <div class="form-group">
             <label data-i18n="field.legalImprintUrl">Impressum-URL</label>
-            <input type="url" id="ds-legal-imprint" value="https://www.example.com/impressum/">
+            <input type="url" id="ds-legal-imprint" value="">
           </div>
 
           <div class="form-group">
             <label data-i18n="field.legalPrivacyUrl">Datenschutz-URL</label>
-            <input type="url" id="ds-legal-privacy" value="https://www.example.com/datenschutz/">
+            <input type="url" id="ds-legal-privacy" value="">
           </div>
 
         </div>

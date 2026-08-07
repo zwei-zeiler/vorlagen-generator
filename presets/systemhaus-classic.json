@@ -1,0 +1,29 @@
+{
+  "activeStyle": "corporate-classic",
+  "activeTemplateId": "ticket-closed",
+  "design": {
+    "primaryColor": "#1f3a5f",
+    "textColor": "#2c2c2c",
+    "accentColor": "#8a8a8a",
+    "logoEnabled": false,
+    "company": "Muster Systemhaus GmbH",
+    "claim": "IT-Systemhaus für den Mittelstand seit 1998",
+    "address": "Musterallee 40, 70173 Stuttgart",
+    "phone": "+49 30 23125 202",
+    "web": "https://www.example.org",
+    "font": "Georgia,'Times New Roman',serif",
+    "legalCeo": "Chris Muster",
+    "legalCourt": "AG Stuttgart",
+    "legalRegNr": "HRB 24680",
+    "legalVatId": "DE246801357",
+    "legalImprintUrl": "https://www.example.org/impressum",
+    "legalPrivacyUrl": "https://www.example.org/datenschutz",
+    "autotaskZone": "ww18",
+    "autotaskUrl": "https://ww18.autotask.net/Mvc/ServiceDesk/TicketDetail.mvc?ticketId={id}",
+    "templateLang": "de"
+  },
+  "templateOverrides": {
+    "ticket-confirmation": { "sections": { "signature": true } },
+    "ticket-survey": { "sections": { "signature": true } }
+  }
+}

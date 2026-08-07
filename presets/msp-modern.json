@@ -1,0 +1,34 @@
+{
+  "activeStyle": "modern-card",
+  "activeTemplateId": "ticket-confirmation",
+  "design": {
+    "primaryColor": "#1f6feb",
+    "textColor": "#24292f",
+    "accentColor": "#6e7781",
+    "logoEnabled": false,
+    "company": "Beispiel IT-Services GmbH",
+    "claim": "Managed Services für den Mittelstand",
+    "address": "Beispielweg 12, 20095 Hamburg",
+    "phone": "+49 30 23125 101",
+    "web": "https://it-services.example.com",
+    "font": "Arial,Helvetica,sans-serif",
+    "legalCeo": "Alex Beispiel",
+    "legalCourt": "AG Hamburg",
+    "legalRegNr": "HRB 98765",
+    "legalVatId": "DE987654321",
+    "legalImprintUrl": "https://it-services.example.com/impressum",
+    "legalPrivacyUrl": "https://it-services.example.com/datenschutz",
+    "bookingUrl": "https://termine.example.com/erstgespraech",
+    "bookingActive": true,
+    "portalUrl": "https://portal.example.com",
+    "autotaskZone": "ww18",
+    "autotaskUrl": "https://ww18.autotask.net/Mvc/ServiceDesk/TicketDetail.mvc?ticketId={id}",
+    "templateLang": "de"
+  },
+  "templateOverrides": {
+    "ticket-note": { "sections": { "kundenportal": true } },
+    "ticket-accepted": { "sections": { "kundenportal": true } },
+    "ticket-confirmation": { "sections": { "kundenportal": true } },
+    "ticket-closed": { "sections": { "kundenportal": true } }
+  }
+}

@@ -15,6 +15,8 @@ Browser-basierter Template-Generator fuer professionelle E-Mail-Vorlagen in Auto
 - 4 Style-Varianten (Modern Card, Clean Minimal, Corporate Classic, Internal Minimal)
 - Autotask-Zonen: Variablennamen entstehen sprachrichtig zur gewaehlten Zone
   (`ww18` deutsch, `ww12` spanisch, uebrige englisch) und werden beim Zonenwechsel uebersetzt
+- Drei fertige Presets unter `presets/`, ladbar per `?preset=<id>` oder aus der Top-Bar —
+  ein Link fuehrt damit auf ein fertiges Ergebnis statt auf den Demo-Stand
 - Live-Preview (Desktop / Mobile)
 - Code-Export mit PSA-Variablen — als HTML **und** als Plain-Text fuer das
   Autotask-Feld „Nur Text"
